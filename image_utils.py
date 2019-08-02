@@ -13,10 +13,11 @@ from generic import *
 def view_stack(ims, figsize=(20, 20), figshape=None, 
                cmap='gray', vrange='all', **kwargs):
     """
-    Display a stack of images, using subplots
+    Display a stack or list of images using subplots.
 
-    :param ims: single or list of np.ndarray
-                if list, np.stack is called first
+    :param ims: single np.ndarray of size [N x H x W x 3/1] or 
+                list of np.ndarray(s) of size [H x W x 3/1]
+                (if list, np.stack is called first)
     :param figsize: plt.figure(figsize=figsize)
     :param figshape: (rows, cols) of the figure
                      if None, the sizes are inferred
@@ -26,26 +27,32 @@ def view_stack(ims, figsize=(20, 20), figshape=None,
                    if 'each' use a different display range for each image
     :param kwargs: passed to `imshow` for each image
     """
-    if isinstance(ims, list):
-        ims = np.stack(ims, -1)
-    if len(ims.shape) < 3:
-        ims = np.expand_dims(ims, -1)
-    n = ims.shape[-1]
+    # get number of images
+    if isinstance(ims, list): n = len(ims)
+    else:                     n = ims.shape[0] 
+        
     if figshape is None:
-        rows = int(np.ceil(np.sqrt(n)))
-        cols = int(np.ceil(1.*n/rows))
+        cols = int(np.ceil(np.sqrt(n)))
+        rows = int(np.ceil(1.*n/cols))
     else:
         rows, cols = figshape
     if vrange == 'all':
-        vrange = minmax(ims)
+        if isinstance(ims, list):
+            mm = map(minmax, ims)
+            vrange = (min([p[0] for p in mm]), 
+                      max([p[1] for p in mm]))
+        else: 
+            vrange = minmax(ims)
     elif vrange == 'each':
         vrange = (None, None)
 
     fig = plt.figure(figsize=figsize)
     for i in range(n):
         ax = fig.add_subplot(rows, cols, i+1)
-        ax.imshow(np.squeeze(ims[..., i]), cmap=cmap,
-                  vmin=vrange[0], vmax=vrange[1], **kwargs)
+        if isinstance(ims, list): im = ims[i]
+        else:                     im = np.squeeze(ims[i, ...])            
+        ax.imshow(im, cmap=cmap, vmin=vrange[0], 
+                  vmax=vrange[1], **kwargs)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
     
@@ -69,24 +76,29 @@ def read_image(image_path, image_size=1):
             x = transform.resize(x/255., new_size, mode='reflect')*255.
     return x
 
-def read_image_batch(image_paths, image_size=None):
+def read_image_batch(image_paths, image_size=None, as_list=False):
     """
     Reads image array of np.uint8 and shape (num_images, *image_shape)
 
     :param image_paths: list of image paths
     :param image_size: if not None, image is resized
-    :return: np.ndarray
+    :param as_list: if True, return list of images, 
+                    else return np.ndarray (default)
+    :return: np.ndarray or list
     """
     images = None
     for i, image_path in enumerate(image_paths):
         im = load_img(image_path)
         if image_size is not None:
             im = im.resize(image_size, Image.LANCZOS)
-        x = img_to_array(im)
+        x = img_to_array(im).astype(np.uint8)
         if images is None:
-            images = np.zeros((len(image_paths),) + x.shape,
-                              dtype=np.uint8)
-        images[i, ...] = x
+            if not as_list:
+                images = np.zeros((len(image_paths),) + x.shape,
+                                  dtype=np.uint8)
+            else: images = []
+        if not as_list: images[i, ...] = x
+        else: images.append(x)
     return images
 
 def extract_random_patch(im, patch_size=(224, 224), border=(0, 0)):

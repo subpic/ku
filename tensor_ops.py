@@ -36,6 +36,10 @@ def plcc_tf(x, y):
     yc = y - K.mean(y)
     return K.mean(xc*yc) / (K.std(x)*K.std(y) + K.epsilon())
 
+def plcc_loss(x, y):
+    """Loss version of `plcc_tf`"""
+    return (1. - plcc_tf(x, y)) / 2.
+
 def earth_mover_loss(y_true, y_pred):
     """
     Earth Mover's Distance loss.

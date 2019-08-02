@@ -351,8 +351,9 @@ def test_rating_model(helper, output_layer=None, test_set='test',
         y_pred = dist2mos(y_pred, scale=np.arange(1, len(outputs)+1))
         y_test = np.array(ids_test.loc[:, outputs])
         y_test = dist2mos(y_test, scale=np.arange(1, len(outputs)+1))
-    else:                 # for MOS
-        y_test = np.array(ids_test.loc[:,'MOS'])
+    else:                 # for single prediction
+        ouput = force_list(helper.gen_params.outputs)[0]
+        y_test = np.array(ids_test.loc[:,ouput])
 
     # in case the last batch was not used, and dataset size
     # is not a multiple of batch_size
@@ -406,7 +407,7 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
     :param stratify: do stratification
     :param random_state: initialize random state with a fixed value,
                          for reproducibility
-    :return: modified DataTable
+    :return: modified DataFrame
     """
     if not(isinstance(test_size, tuple) or
            isinstance(test_size, list)):
