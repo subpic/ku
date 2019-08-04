@@ -226,7 +226,8 @@ class ModelHelper:
         self.model_cpu = self.model
         self.model = multi_gpu_model(self.model, gpus=gpus)        
 
-    def train(self, train_gen=None, valid_gen=None, lr=1e-4, epochs=1):
+    def train(self, train_gen=True, valid_gen=True, 
+              lr=1e-4, epochs=1, valid_in_memory=False):
         """
         Run training iterations on existing model.
         Initializes `train_gen` and `valid_gen` if not defined.
@@ -238,23 +239,23 @@ class ModelHelper:
         :return:          training history from self.model.fit_generator()
         """
         ids = self.ids
-        params = self.params
                    
         print '\nTraining model:', self.model_name()
         
-        if train_gen is None:
+        if train_gen is True:
             train_gen = self.make_generator(ids[ids.set == 'training'])
-        if valid_gen is None:
+        if valid_gen is True:
             valid_gen = self.make_generator(ids[ids.set == 'validation'],
-                                            deterministic=True)
+                                            shuffle       = False,
+                                            deterministic = False)
 
-        if lr: self.params.lr = lr
+        if lr: 
+            self.params.lr = lr
         self.params.optimizer = update_config(self.params.optimizer,
-                                              lr=self.params.lr)
-        
+                                              lr=self.params.lr)        
         self.model.compile(optimizer=self.params.optimizer, 
-                           loss=params.loss, loss_weights=params.loss_weights, 
-                           metrics=params.metrics)
+                           loss=self.params.loss, loss_weights=self.params.loss_weights, 
+                           metrics=self.params.metrics)
 
         if self.verbose:
             print '\nGenerator parameters:'
@@ -265,15 +266,30 @@ class ModelHelper:
             pretty(self.params)
             print '\nLearning'
 
-        history = self.model.fit_generator(train_gen, epochs = epochs,
-                                           steps_per_epoch   = len(train_gen),
-                                           validation_data   = valid_gen, 
-                                           validation_steps  = len(valid_gen),
-                                           workers           = params.workers, 
-                                           callbacks         = self._callbacks(),
-                                           max_queue_size    = params.max_queue_size,
-                                           class_weight      = self.params.class_weights,
-                                           use_multiprocessing = params.multiproc)
+        
+        if valid_in_memory:
+            valid_gen.batch_size = len(valid_gen.ids)
+            valid_data = valid_gen[0]
+            valid_steps = None
+        else:
+            valid_data = valid_gen
+            if issubclass(type(valid_gen), 
+                          keras.utils.Sequence):
+                valid_steps = len(valid_gen)
+            else:
+                valid_steps = None
+            
+        history = self.model.fit_generator(
+                         train_gen, epochs = epochs,
+                         steps_per_epoch   = len(train_gen),
+                         validation_data   = valid_data, 
+                         validation_steps  = valid_steps,
+                         workers           = self.params.workers, 
+                         callbacks         = self._callbacks(),
+                         max_queue_size    = self.params.max_queue_size,
+                         class_weight      = self.params.class_weights,
+                         use_multiprocessing = self.params.multiproc)
+
         return history
     
     def clean_outputs(self):
