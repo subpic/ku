@@ -288,9 +288,9 @@ def model_inceptionresnet_pooled(input_shape=(None, None, 3), pool_size=(5, 5),
 # RATING model utils
 # ------------------
 
-def test_rating_model(helper, output_layer=None, test_set='test',
-                      accuracy_thresh=None, groups=1, remodel=False,
-                      ids=None, show_plot=True):
+def test_rating_model(helper, output_layer=None, output_column=None, 
+                      test_set='test', accuracy_thresh=None, groups=1, 
+                      remodel=False, ids=None, show_plot=True):
     """
     Test rating model performance. The output of the mode is assumed to be
     either a single score, or distribution of scores (can be a histogram).
@@ -299,6 +299,7 @@ def test_rating_model(helper, output_layer=None, test_set='test',
     :param output_layer: the rating layer, if more than out output exists
                          if output_layer is None, we assume there is a single
                          rating output
+    :param output_column: the column in ids that corresponds to the output
     :param test_set: name of the test set in the helper `ids`
                      allows to test model on validation, or training set
     :param accuracy_thresh: compute binary classification accuracy, assuming a
@@ -346,14 +347,21 @@ def test_rating_model(helper, output_layer=None, test_set='test',
     if isinstance(y_pred, list):
         y_pred = reduce(lambda x, y: (x+y), y_pred) / len(y_pred)
 
-    if y_pred.ndim == 2:  # for distributions
+    if y_pred.ndim == 2: 
+        # for distributions
+        print 'Testing distributions'
         outputs = helper.gen_params.outputs
         y_pred = dist2mos(y_pred, scale=np.arange(1, len(outputs)+1))
         y_test = np.array(ids_test.loc[:, outputs])
         y_test = dist2mos(y_test, scale=np.arange(1, len(outputs)+1))
-    else:                 # for single prediction
-        ouput = force_list(helper.gen_params.outputs)[0]
-        y_test = np.array(ids_test.loc[:,ouput])
+    else:                 
+        # for single prediction
+        print 'Testing single prediction'
+        if output_column is None:
+            output = force_tuple(helper.gen_params.outputs)[0]
+        else:
+            output = output_column
+        y_test = np.array(ids_test.loc[:,output])
 
     # in case the last batch was not used, and dataset size
     # is not a multiple of batch_size
