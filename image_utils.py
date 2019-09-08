@@ -215,7 +215,11 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
             if over_write or not os.path.isfile(file_path_dst): 
                 im = Image.open(file_path_src)
                 if image_size_dst is not None:
-                    imx = im.resize(image_size_dst, Image.LANCZOS)
+                    if isinstance(image_size_dst, float):
+                        actual_size = [int(y*image_size_dst) for y in im.size]
+                    else:
+                        actual_size = image_size_dst
+                    imx = im.resize(actual_size, Image.LANCZOS)
                 else:
                     imx = im
                 if format_dst.lower() in ('jpg', 'jpeg'):
@@ -223,6 +227,7 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
                 else:
                     imx.save(file_path_dst, format_dst.upper())
         except:
+            print 'error saving', file_name
             errors.append(file_name)
             
     return errors
