@@ -26,6 +26,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
     process_fn (function):  function applied to each image as it is read
     deterministic (None, int):  random seed for shuffling order
     inputs (tuple of strings):  column names from `ids` containing image names
+    inputs_df (strings tuple): column names from `ids`, returns values from the DataFrame itself
     outputs (tuple of strings): column names from `ids`
     verbose (bool):             logging verbosity
     fixed_batches (bool):       only return full batches, ignore the last incomplete batch if needed
@@ -36,11 +37,13 @@ class DataGeneratorDisk(keras.utils.Sequence):
                             batch_size    = 32,       shuffle = True,
                             input_shape   = (224, 224, 3), process_fn = None,
                             deterministic = None,     inputs=('image_name',),
-                            outputs       = ('MOS',), verbose = False,
-                            fixed_batches = False,    process_args = None)
+                            inputs_df   = None,       outputs       = ('MOS',), 
+                            verbose = False,          fixed_batches = False,
+                            process_args = None)
         check_keys_exist(args, params_defa)
         params = updated_dict(params_defa, **args)  # update only existing
         params.inputs    = force_tuple(params.inputs)
+        params.inputs_df = force_tuple(params.inputs_df)
         params.outputs   = force_tuple(params.outputs)
         params.deterministic = {True: 42, False: None}.\
                                get(params.deterministic,
@@ -87,7 +90,10 @@ class DataGeneratorDisk(keras.utils.Sequence):
             y = None
 
         # build array from reading images in `inputs` columns
-        X_list = []
+        X_list = []        
+        if params.inputs_df is not None:
+            X_list.append(np.array(ids_batch.loc[:, params.inputs_df]))
+            
         for input_name in self.inputs:
             data = []
             # read the data from disk into a list
