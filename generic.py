@@ -1,6 +1,6 @@
 import numpy as np, pandas as pd
 import multiprocessing as mp
-import os, scipy, h5py
+import os, scipy, h5py, time
 from munch import Munch
 
 
@@ -392,3 +392,15 @@ def update_config(obj, **kwargs):
     cfg = obj.get_config()
     cfg.update(**kwargs)
     return obj.from_config(cfg)
+
+class Timer(object):
+    def __init__(self, name=None):
+        self.name = name
+
+    def __enter__(self):
+        self.tstart = time.time()
+
+    def __exit__(self, type, value, traceback):
+        if self.name:
+            print('[%s]' % self.name),
+        print('elapsed: %s seconds' % round(time.time() - self.tstart, 4))
