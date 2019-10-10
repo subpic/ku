@@ -69,7 +69,8 @@ class ModelHelper:
         self.model_cpu = None
 
         self.gen_params = Munch(shuffle       = True,  process_fn = False,
-                                deterministic = False, verbose    = verbose)
+                                deterministic = False, verbose    = verbose, 
+                                batch_size    = 32)
         self.params = Munch(lr   = 1e-4,               # learning rate
                             loss = "MSE",              # loss function
                             loss_weights   = None,     # loss weights, if multiple losses are used
@@ -226,8 +227,15 @@ class ModelHelper:
         self.model_cpu = self.model
         self.model = multi_gpu_model(self.model, gpus=gpus)        
 
+    def compile(self):
+        self.model.compile(optimizer    = self.params.optimizer, 
+                           loss         = self.params.loss, 
+                           loss_weights = self.params.loss_weights, 
+                           metrics      = self.params.metrics)
+        
     def train(self, train_gen=True, valid_gen=True, 
-              lr=1e-4, epochs=1, valid_in_memory=False):
+              lr=1e-4, epochs=1, valid_in_memory=False, 
+              recompile=True, verbose=False):
         """
         Run training iterations on existing model.
         Initializes `train_gen` and `valid_gen` if not defined.
@@ -248,14 +256,13 @@ class ModelHelper:
             valid_gen = self.make_generator(ids[ids.set == 'validation'],
                                             shuffle       = False,
                                             deterministic = False)
-
-        if lr: 
-            self.params.lr = lr
-        self.params.optimizer = update_config(self.params.optimizer,
-                                              lr=self.params.lr)        
-        self.model.compile(optimizer=self.params.optimizer, 
-                           loss=self.params.loss, loss_weights=self.params.loss_weights, 
-                           metrics=self.params.metrics)
+        
+        if recompile:
+            if lr: self.params.lr = lr
+            self.params.optimizer =\
+                update_config(self.params.optimizer,
+                              lr=self.params.lr)    
+            self.compile()
 
         if self.verbose:
             print '\nGenerator parameters:'
@@ -266,7 +273,6 @@ class ModelHelper:
             pretty(self.params)
             print '\nLearning'
 
-        
         if valid_in_memory:
             valid_gen.batch_size = len(valid_gen.ids)
             valid_data = valid_gen[0]
@@ -278,18 +284,38 @@ class ModelHelper:
                 valid_steps = len(valid_gen)
             else:
                 valid_steps = None
+                
+                
+        if issubclass(type(train_gen), 
+                      keras.utils.Sequence): 
+            # train using the generator            
+            history = self.model.fit_generator(
+                             train_gen, epochs = epochs,
+                             steps_per_epoch   = len(train_gen),
+                             validation_data   = valid_data, 
+                             validation_steps  = valid_steps,
+                             workers           = self.params.workers, 
+                             callbacks         = self._callbacks(),
+                             max_queue_size    = self.params.max_queue_size,
+                             class_weight      = self.params.class_weights,
+                             use_multiprocessing = self.params.multiproc,
+                             verbose             = verbose)
+        else:
+            # training data is passed in train_gen
+            X, y = train_gen            
+            steps_per_epoch = X.shape[0]//self.gen_params.batch_size
             
-        history = self.model.fit_generator(
-                         train_gen, epochs = epochs,
-                         steps_per_epoch   = len(train_gen),
-                         validation_data   = valid_data, 
-                         validation_steps  = valid_steps,
-                         workers           = self.params.workers, 
-                         callbacks         = self._callbacks(),
-                         max_queue_size    = self.params.max_queue_size,
-                         class_weight      = self.params.class_weights,
-                         use_multiprocessing = self.params.multiproc)
+            history = self.model.fit(X, y,
+                             batch_size      = self.gen_params.batch_size,
+                             epochs          = epochs,
+                             callbacks       = self._callbacks(),                
+                             validation_data = valid_data,
+                             shuffle         = self.gen_params.shuffle,
+                             class_weight    = self.params.class_weights,
+                             verbose         = verbose)
 
+#          model.fit(x=None, y=None, batch_size=None, epochs=1, verbose=1, callbacks=None, validation_split=0.0, validation_data=None, shuffle=True, class_weight=None,sample_weight=None, initial_epoch=0, steps_per_epoch=None, validation_steps=None, **kwargs)
+            
         return history
     
     def clean_outputs(self):
