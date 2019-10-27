@@ -235,7 +235,7 @@ class ModelHelper:
         
     def train(self, train_gen=True, valid_gen=True, 
               lr=1e-4, epochs=1, valid_in_memory=False, 
-              recompile=True, verbose=False):
+              recompile=True, verbose=True):
         """
         Run training iterations on existing model.
         Initializes `train_gen` and `valid_gen` if not defined.
@@ -254,8 +254,8 @@ class ModelHelper:
             train_gen = self.make_generator(ids[ids.set == 'training'])
         if valid_gen is True:
             valid_gen = self.make_generator(ids[ids.set == 'validation'],
-                                            shuffle       = False,
-                                            deterministic = False)
+                                            shuffle       = True,
+                                            deterministic = True)
         
         if recompile:
             if lr: self.params.lr = lr
@@ -285,7 +285,6 @@ class ModelHelper:
             else:
                 valid_steps = None
                 
-                
         if issubclass(type(train_gen), 
                       keras.utils.Sequence): 
             # train using the generator            
@@ -314,9 +313,24 @@ class ModelHelper:
                              class_weight    = self.params.class_weights,
                              verbose         = verbose)
 
-#          model.fit(x=None, y=None, batch_size=None, epochs=1, verbose=1, callbacks=None, validation_split=0.0, validation_data=None, shuffle=True, class_weight=None,sample_weight=None, initial_epoch=0, steps_per_epoch=None, validation_steps=None, **kwargs)
-            
         return history
+
+    def validate(self, valid_gen=True, batch_size=32):                
+        if valid_gen is True:
+            ids = self.ids
+            valid_gen = self.make_generator(ids[ids.set == 'validation'],
+                                            shuffle       = True,
+                                            deterministic = True)        
+        print 'Validating performance'
+        if issubclass(type(valid_gen), 
+                      keras.utils.Sequence): 
+            r = self.model.evaluate_generator(valid_gen, verbose=0)
+        else:
+            r = self.model.evaluate(X_valid, y_valid, 
+                                    batch_size=batch_size, verbose=0)
+        perf_metrics = dict(zip(self.model.metrics_names, r))
+        pretty(perf_metrics)
+        return perf_metrics
     
     def clean_outputs(self):
         """
