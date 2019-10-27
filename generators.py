@@ -76,8 +76,9 @@ class DataGeneratorDisk(keras.utils.Sequence):
 
     def _data_generation(self, ids_batch):
         """Generates image-stack + outputs containing batch_size samples"""
-        np.random.seed(self.deterministic)
-
+        params = self
+        np.random.seed(self.deterministic)        
+        
         # return values from `outputs` columns
         outputs = self.outputs
         if outputs is not None:
