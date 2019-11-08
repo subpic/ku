@@ -133,7 +133,7 @@ class ModelHelper(object):
         h = self
         tostr = lambda x: str(x) if x is not None else '?'
         format_size = lambda x: '[{}]'.format(','.join(map(tostr, x)))
-        loss2str = lambda x: (x if isinstance(x, basestring) else x.__name__)[:8]
+        loss2str = lambda x: (x if isinstance(x, (str, bytes)) else x.__name__)[:8]
 
         loss = h.params.loss        
         if not isinstance(loss, dict):
