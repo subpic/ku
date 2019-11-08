@@ -1,6 +1,5 @@
 from __future__ import print_function
 from __future__ import division
-from builtins import input
 from builtins import zip
 from builtins import str
 from builtins import range
@@ -8,8 +7,11 @@ from past.utils import old_div
 from builtins import object
 import numpy as np, pandas as pd
 import multiprocessing as mp
-import os, scipy, h5py, time
+import os, scipy, h5py, time, sys
 from munch import Munch
+
+if sys.version_info.major == 2:        
+    input = raw_input
 
 # Helps with the DataGeneratorHDF5
 class H5Helper(object):
@@ -380,12 +382,11 @@ def raw_confirm(message):
     :param message: message to show
     :return: true if confirmation given, false otherwise
     """
-    print(message, '(y/[n])')
-    confirmation = input()
+    confirmation = input(message + " (y/[n])")
     if not confirmation:
         return False  # do not confirm by default
     else:
-        return confirmation.lower()[0] == 'y'
+        return confirmation.lower()[0] == "y"
 
 def update_config(obj, **kwargs):
     """
