@@ -1,5 +1,7 @@
-import generic, tensor_ops, image_utils
-import generators, model_helper, applications
+from __future__ import print_function
+from __future__ import absolute_import
+from . import generic, tensor_ops, image_utils
+from . import generators, model_helper, applications
 
 from keras import backend as K
 if K.backend()=='tensorflow': 
@@ -19,4 +21,4 @@ logger.addFilter(WarningFilter())
 import warnings
 warnings.filterwarnings("ignore")
 
-print 'loaded kutils'
+print('Loaded keras utilities')

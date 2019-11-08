@@ -1,11 +1,10 @@
+from __future__ import print_function
 import numpy as np, pandas as pd
 import multiprocessing as mp
 import os, scipy, h5py, time
 from munch import Munch
 
-
 # Helps with the DataGeneratorHDF5
-
 class H5Helper:
     """
     Read/Write named data sets from/to an HDF5 file.
@@ -45,10 +44,10 @@ class H5Helper:
         # internal to the class
         for i in range(len(data)):
             if self.verbose and i % 10000 == 0:
-                print i,
+                print(i, end=' ')
             writer.create_dataset(dataset_names[i], data=data[i, ...])
         if self.verbose: 
-            print len(data), 'done'
+            print(len(data), 'done')
 
     def write_data(self, data, dataset_names, group_names=None):
         """
@@ -82,10 +81,10 @@ class H5Helper:
         data[0,...] = data0
         for i in range(1, len(dataset_names)):
             if self.verbose and i % 10000 == 0:
-                print i,
+                print(i, end=' ')
             data[i, ...] = reader[dataset_names[i]][...]
         if self.verbose:
-            print len(dataset_names), 'done'
+            print(len(dataset_names), 'done')
         return data
   
     def read_data(self, dataset_names, group_names=None):
@@ -130,20 +129,20 @@ class H5Helper:
         keys = hf.keys()
         for i, group_name in enumerate(keys):
             if i > print_limit:
-                print '[...] first %d items from a total of %d' % (print_limit, len(keys))
+                print('[...] first %d items from a total of %d' % (print_limit, len(keys)))
                 break
-            print group_name, '\b/'
+            print(group_name, '\b/')
             group = hf[group_name]
             try:
                 group_keys = group.keys()
-                print ' ',
+                print(' ', end=' ')
                 for j, dataset_name in enumerate(group_keys):
                     if j > print_limit:
-                        print '[...] first %d from a total of %d' % (print_limit, len(group_keys))
+                        print('[...] first %d from a total of %d' % (print_limit, len(group_keys)))
                         break
-                    print dataset_name,
+                    print(dataset_name, end=' ')
                 if len(group_keys):
-                    print
+                    print()
             except: pass
         return ''
 
@@ -292,9 +291,9 @@ def pretty(d, indent=0, key_sep=':', trim=True):
         max_key_len = max([len(str(k)) for k in keys])        
     for key, value in d.items():
         equal_offset = ' '*(max_key_len - len(str(key)))
-        print '\t' * indent + str(key) + key_sep,
+        print('\t' * indent + str(key) + key_sep, end=' ')
         if isinstance(value, dict):
-            print
+            print()
             pretty(value, indent+1)
         else:
             value_str = str(value).strip()
@@ -302,7 +301,7 @@ def pretty(d, indent=0, key_sep=':', trim=True):
                 value_str = ' '.join(value_str.split())
             if len(value_str) > 70:
                 value_str = value_str[:70] + ' [...]' 
-            print equal_offset + value_str
+            print(equal_offset + value_str)
 
 class ShortNameBuilder(Munch):
     """
@@ -358,14 +357,14 @@ def print_sizes(x):
     Recursively prints the shapes of elements in lists.
     """
     if isinstance(x, list) or isinstance(x, tuple):
-        print '[',
+        print('[', end=' ')
         for _x_ in x: 
             print_sizes(_x_)
-            print ',',
-        print '\b\b]',
+            print(',', end=' ')
+        print('\b\b]', end=' ')
     elif hasattr(x, 'shape'):
-        print x.shape,
-    else: print x,
+        print(x.shape, end=' ')
+    else: print(x, end=' ')
     return ''
         
 def raw_confirm(message):
@@ -374,7 +373,7 @@ def raw_confirm(message):
     :param message: message to show
     :return: true if confirmation given, false otherwise
     """
-    print message, '(y/[n])'
+    print(message, '(y/[n])')
     confirmation = raw_input()
     if not confirmation:
         return False  # do not confirm by default
@@ -402,5 +401,5 @@ class Timer(object):
 
     def __exit__(self, type, value, traceback):
         if self.name:
-            print('[%s]' % self.name),
+            print(('[%s]' % self.name), end=' ')
         print('elapsed: %s seconds' % round(time.time() - self.tstart, 4))

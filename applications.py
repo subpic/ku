@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import keras
@@ -10,6 +12,7 @@ from keras.applications.resnet50 import ResNet50
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.applications.vgg16 import VGG16
 from keras.applications.nasnet import NASNetMobile
+from functools import reduce
 
 source_module = {
                  InceptionV3:       keras.applications.inception_v3,
@@ -20,7 +23,7 @@ source_module = {
                  NASNetMobile:      keras.applications.nasnet
                 }
 
-from model_helper import *
+from .model_helper import *
 
 # correspondences between CNN model name and pre-processing function
 process_input = {
@@ -156,12 +159,12 @@ def model_inception_multigap(input_shape=(224, 224, 3), return_sizes=False,
     :param name: name of the model
     :return: model or (model, gap_sizes)
     """
-    print 'Loading InceptionV3 multi-gap with input_shape:', input_shape
+    print('Loading InceptionV3 multi-gap with input_shape:', input_shape)
 
     model_base = InceptionV3(weights     = 'imagenet', 
                              include_top = False, 
                              input_shape = input_shape)
-    print 'Creating multi-GAP model'
+    print('Creating multi-GAP model')
     
     gap_name = name + '_' if name else ''
 
@@ -192,12 +195,12 @@ def model_inceptionresnet_multigap(input_shape=(224, 224, 3),
     :param return_sizes: return the sizes of each layer: (model, gap_sizes)
     :return: model or (model, gap_sizes)
     """
-    print 'Loading InceptionResNetV2 multi-gap with input_shape:', input_shape
+    print('Loading InceptionResNetV2 multi-gap with input_shape:', input_shape)
 
     model_base = InceptionResNetV2(weights='imagenet',
                                    include_top=False,
                                    input_shape=input_shape)
-    print 'Creating multi-GAP model'
+    print('Creating multi-GAP model')
     
     feature_layers = [l for l in model_base.layers if 'mixed' in l.name]
     gaps = [GlobalAveragePooling2D(name="gap%d" % i)(l.output)
@@ -225,11 +228,11 @@ def model_inception_pooled(input_shape=(None, None, 3), indexes=range(11),
     :param return_sizes: return the sizes of each layer: (model, pool_sizes)
     :return: model or (model, pool_sizes)
     """
-    print 'Loading InceptionV3 multi-pooled with input_shape:', input_shape
+    print('Loading InceptionV3 multi-pooled with input_shape:', input_shape)
     model_base = InceptionV3(weights     = 'imagenet', 
                              include_top = False, 
                              input_shape = input_shape)
-    print 'Creating multi-pooled model'
+    print('Creating multi-pooled model')
     
     ImageResizer = Lambda(lambda x: K.tf.image.resize_area(x, pool_size),
                           name='feature_resizer')
@@ -260,11 +263,11 @@ def model_inceptionresnet_pooled(input_shape=(None, None, 3), pool_size=(5, 5),
     :return: model or (model, pool_sizes)
     """
     
-    print 'Loading InceptionResNetV2 multi-pooled with input_shape:', input_shape
+    print('Loading InceptionResNetV2 multi-pooled with input_shape:', input_shape)
     model_base = InceptionResNetV2(weights     = 'imagenet', 
                                    include_top = False, 
                                    input_shape = input_shape)
-    print 'Creating multi-pooled model'
+    print('Creating multi-pooled model')
     
     ImageResizer = Lambda(lambda x: K.tf.image.resize_area(x, pool_size),
                           name='feature_resizer') 
@@ -315,8 +318,8 @@ def test_rating_model(helper, output_layer=None, output_column=None,
     :param show_plot: plot results vs ground-truth
     :return: (y_true, y_pred, SRCC, PLCC, ACC)
     """
-    print 'Testing model'
-    print 'Model outputs:', helper.model.output_names
+    print('Testing model')
+    print('Model outputs:', helper.model.output_names)
     if ids is None: ids = helper.ids
     ids_test = ids if test_set is None else ids[ids.set==test_set]
 
@@ -333,30 +336,30 @@ def test_rating_model(helper, output_layer=None, output_column=None,
         else:
             groups_list = map(str, groups)
         y_pred = []
-        print 'Predicting on groups:'
+        print('Predicting on groups:')
         for group in groups_list:
-            print group,
+            print(group, end=' ')
             test_gen = helper.make_generator(ids_test, shuffle=False,
                                              fixed_batches = False,
                                              random_group  = False,
                                              group_names   = force_list(group))
             y_pred.append(helper.predict(test_gen, repeats=1, remodel=remodel,
                                          output_layer=output_layer))
-        print
+        print()
     
     if isinstance(y_pred, list):
         y_pred = reduce(lambda x, y: (x+y), y_pred) / len(y_pred)
 
     if y_pred.ndim == 2: 
         # for distributions
-        print 'Testing distributions'
+        print('Testing distributions')
         outputs = helper.gen_params.outputs
         y_pred = dist2mos(y_pred, scale=np.arange(1, len(outputs)+1))
         y_test = np.array(ids_test.loc[:, outputs])
         y_test = dist2mos(y_test, scale=np.arange(1, len(outputs)+1))
     else:                 
         # for single prediction
-        print 'Testing single prediction'
+        print('Testing single prediction')
         if output_column is None:
             output = force_tuple(helper.gen_params.outputs)[0]
         else:
@@ -369,9 +372,9 @@ def test_rating_model(helper, output_layer=None, output_column=None,
     
     SRCC_test = np.round(srocc(y_pred, y_test), 3)
     PLCC_test = np.round(plcc(y_pred, y_test), 3)
-    print 
-    print 'Evaluated on', test_set + '-set' if test_set else 'all data' 
-    print 'SRCC/PLCC:', SRCC_test, PLCC_test
+    print() 
+    print('Evaluated on', test_set + '-set' if test_set else 'all data') 
+    print('SRCC/PLCC:', SRCC_test, PLCC_test)
 
     ACC_test = None
     if accuracy_thresh is not None:
@@ -380,7 +383,7 @@ def test_rating_model(helper, output_layer=None, output_column=None,
         # assume binary classification for scores the LQ class is MOS<=accuracy_thresh
         ACC_test = np.sum((y_test <= accuracy_thresh[0]) ==
                           (y_pred <= accuracy_thresh[1]), dtype=float) / len(y_test)
-        print 'ACCURACY:', ACC_test
+        print('ACCURACY:', ACC_test)
         
     if show_plot:
         plt.plot(y_pred, y_test, '.', markersize=1)
@@ -438,8 +441,8 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
                            random_state=random_state,
                            stratify=strata_valid)  
         
-    print 'Train size:', len(idx_train), 'Validation size:',\
-            len(idx_valid), 'Test size:', len(idx_test)
+    print('Train size:', len(idx_train), 'Validation size:',\
+            len(idx_valid), 'Test size:', len(idx_test))
     
     ids.loc[idx_train, 'set'] = 'training'
     ids.loc[idx_valid, 'set'] = 'validation'
@@ -468,7 +471,7 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
 # A bit overly specific w.r.t. the model architecture
 def get_model_imagenet(net_name, input_shape=None, plot=False, **kwargs):
     """Get ImageNet models"""
-    print 'Loading model', net_name if isinstance(net_name, str) else net_name.func_name
+    print('Loading model', net_name if isinstance(net_name, str) else net_name.__name__)
 
     if net_name == ResNet50:
         base_model = ResNet50(weights='imagenet', include_top=False,
@@ -484,11 +487,11 @@ def get_model_imagenet(net_name, input_shape=None, plot=False, **kwargs):
                               input_shape=input_shape, **kwargs)
         feats = base_model.layers[-1]
     else:
-        raise Exception('Unknown model ' + net_name.func_name)
+        raise Exception('Unknown model ' + net_name.__name__)
 
     gap = GlobalAveragePooling2D(name="final_gap")(feats.output)
     model = Model(inputs=base_model.input, outputs=gap)
 
     if plot: plot_model(base_model, show_shapes=True,
-                        to_file='plots/{}_model.png'.format(net_name.func_name))
+                        to_file='plots/{}_model.png'.format(net_name.__name__))
     return model, process_input[net_name]
