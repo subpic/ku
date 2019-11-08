@@ -1,4 +1,7 @@
 from __future__ import print_function
+from __future__ import division
+from builtins import map
+from past.utils import old_div
 from keras import backend as K
 from keras.engine.topology import Layer
 import os
@@ -35,7 +38,7 @@ def plcc_tf(x, y):
     """PLCC metric"""
     xc = x - K.mean(x)
     yc = y - K.mean(y)
-    return K.mean(xc*yc) / (K.std(x)*K.std(y) + K.epsilon())
+    return K.mean(xc*yc)/(K.std(x)*K.std(y) + K.epsilon())
 
 def plcc_loss(x, y):
     """Loss version of `plcc_tf`"""

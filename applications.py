@@ -1,5 +1,10 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
+from builtins import zip
+from builtins import map
+from builtins import range
+from past.utils import old_div
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import keras
@@ -128,8 +133,8 @@ def inception_block(x, size=768, name=''):
     branch1x1 = conv2d_bn(x, size, 1, 1, name=name+'branch_1x1')
 
     branch3x3 = conv2d_bn(x, size, 1, 1, name=name+'3x3_1x1')
-    branch3x3_1 = conv2d_bn(branch3x3, size/2, 1, 3, name=name+'3x3_1x3')
-    branch3x3_2 = conv2d_bn(branch3x3, size/2, 3, 1, name=name+'3x3_3x1')
+    branch3x3_1 = conv2d_bn(branch3x3, old_div(size,2), 1, 3, name=name+'3x3_1x3')
+    branch3x3_2 = conv2d_bn(branch3x3, old_div(size,2), 3, 1, name=name+'3x3_3x1')
     branch3x3 = concatenate(
         [branch3x3_1, branch3x3_2],
         axis=channel_axis,
@@ -148,7 +153,7 @@ def inception_block(x, size=768, name=''):
     return y
 
 def model_inception_multigap(input_shape=(224, 224, 3), return_sizes=False,
-                             indexes=range(11), name = ''):
+                             indexes=list(range(11)), name = ''):
     """
     Build InceptionV3 multi-GAP model, that extracts narrow MLSP features.
     Relies on `get_inception_gaps`.
@@ -215,7 +220,7 @@ def model_inceptionresnet_multigap(input_shape=(224, 224, 3),
     else:
         return model
     
-def model_inception_pooled(input_shape=(None, None, 3), indexes=range(11),
+def model_inception_pooled(input_shape=(None, None, 3), indexes=list(range(11)),
                            pool_size=(5, 5), name='', return_sizes=False):
     """
     Returns the wide MLSP features, spatially pooled, from InceptionV3.
@@ -329,12 +334,12 @@ def test_rating_model(helper, output_layer=None, output_column=None,
                                          fixed_batches = False)
         y_pred = helper.predict(test_gen, repeats=groups, remodel=remodel,
                                 output_layer=output_layer)
-        groups_list = range(groups)
+        groups_list = list(range(groups))
     else:
         if isinstance(groups[0], (list, tuple, str)):
             groups_list = groups
         else:
-            groups_list = map(str, groups)
+            groups_list = list(map(str, groups))
         y_pred = []
         print('Predicting on groups:')
         for group in groups_list:
@@ -348,7 +353,7 @@ def test_rating_model(helper, output_layer=None, output_column=None,
         print()
     
     if isinstance(y_pred, list):
-        y_pred = reduce(lambda x, y: (x+y), y_pred) / len(y_pred)
+        y_pred = old_div(reduce(lambda x, y: (x+y), y_pred), len(y_pred))
 
     if y_pred.ndim == 2: 
         # for distributions
@@ -381,8 +386,8 @@ def test_rating_model(helper, output_layer=None, output_column=None,
         if not isinstance(accuracy_thresh, list):
             accuracy_thresh = [accuracy_thresh]*2
         # assume binary classification for scores the LQ class is MOS<=accuracy_thresh
-        ACC_test = np.sum((y_test <= accuracy_thresh[0]) ==
-                          (y_pred <= accuracy_thresh[1]), dtype=float) / len(y_test)
+        ACC_test = old_div(np.sum((y_test <= accuracy_thresh[0]) ==
+                          (y_pred <= accuracy_thresh[1]), dtype=float), len(y_test))
         print('ACCURACY:', ACC_test)
         
     if show_plot:
@@ -424,7 +429,7 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
            isinstance(test_size, list)):
         test_size = (test_size, test_size)
     ids = ids.copy().reset_index(drop=True)
-    idx = range(len(ids))
+    idx = list(range(len(ids)))
     if not stratify:
         strata = None
     else:
@@ -482,7 +487,7 @@ def get_model_imagenet(net_name, input_shape=None, plot=False, **kwargs):
                                   include_top=True,
                                   input_shape=input_shape, **kwargs)
         feats = base_model.layers[-3]
-    elif net_name in source_module.keys():
+    elif net_name in list(source_module.keys()):
         base_model = net_name(weights='imagenet', include_top=False,
                               input_shape=input_shape, **kwargs)
         feats = base_model.layers[-1]

@@ -1,11 +1,18 @@
 from __future__ import print_function
+from __future__ import division
+from builtins import input
+from builtins import zip
+from builtins import str
+from builtins import range
+from past.utils import old_div
+from builtins import object
 import numpy as np, pandas as pd
 import multiprocessing as mp
 import os, scipy, h5py, time
 from munch import Munch
 
 # Helps with the DataGeneratorHDF5
-class H5Helper:
+class H5Helper(object):
     """
     Read/Write named data sets from/to an HDF5 file.
     The structure of the data inside the HDF5 file is:
@@ -126,7 +133,7 @@ class H5Helper:
         :param print_limit: number of datasets to list per group.
         """
         hf = self.hf
-        keys = hf.keys()
+        keys = list(hf.keys())
         for i, group_name in enumerate(keys):
             if i > print_limit:
                 print('[...] first %d items from a total of %d' % (print_limit, len(keys)))
@@ -134,7 +141,7 @@ class H5Helper:
             print(group_name, '\b/')
             group = hf[group_name]
             try:
-                group_keys = group.keys()
+                group_keys = list(group.keys())
                 print(' ', end=' ')
                 for j, dataset_name in enumerate(group_keys):
                     if j > print_limit:
@@ -151,7 +158,7 @@ class H5Helper:
         """
         :return: list of group names
         """
-        return self.hf.keys()
+        return list(self.hf.keys())
 
     @property
     def dataset_names(self):
@@ -159,11 +166,11 @@ class H5Helper:
         :return: list of dataset names 
                  (if groups are present, from the first group)
         """
-        values = self.hf.values()
+        values = list(self.hf.values())
         if isinstance(values[0], h5py._hl.dataset.Dataset):
-            return self.hf.keys()
+            return list(self.hf.keys())
         else:
-            return values[0].keys()
+            return list(values[0].keys())
 
     # enable 'with' statements
     def __del__(self):
@@ -206,7 +213,7 @@ def mapmm(x, new_range = (0, 1)):
         x = x.astype(np.float32)
     minx, maxx = minmax(x)
     if minx < maxx:
-        x = (x-minx)/(maxx-minx)*(maxa-mina)+mina
+        x = old_div((x-minx),(maxx-minx))*(maxa-mina)+mina
     return x
 
 def plcc(x, y):
@@ -224,7 +231,7 @@ def dist2mos(x, scale=np.arange(1, 6)):
     Find the MOS of a distribution of scores `x`, given a `scale`.
     e.g. x=[0,2,2], scale=[1,2,3] => MOS=2.5
     """
-    x = x / np.reshape(np.sum(x*1., axis=1), (len(x), 1))
+    x = old_div(x, np.reshape(np.sum(x*1., axis=1), (len(x), 1)))
     return np.sum(x * scale, axis=1)
     
 def force_tuple(x):
@@ -262,8 +269,8 @@ def updated_dict(d, only_existing=True, **updates):
     """
     d = d.copy()
     if only_existing:
-        common = {key: value for key, value in updates.items()
-                  if key in d.keys()}     
+        common = {key: value for key, value in list(updates.items())
+                  if key in list(d.keys())}     
         d.update(common)
     else:
         d.update(updates)
@@ -271,7 +278,7 @@ def updated_dict(d, only_existing=True, **updates):
 
 def chunks(l, n):
     """Yields successive `n`-sized chunks from list `l`."""
-    for i in xrange(0, len(l), n):
+    for i in range(0, len(l), n):
         yield l[i:i + n]
 
 def pretty(d, indent=0, key_sep=':', trim=True):
@@ -286,10 +293,10 @@ def pretty(d, indent=0, key_sep=':', trim=True):
     if indent == 0 and not isinstance(d, dict):
         d = d.__dict__
     max_key_len = 0
-    keys = d.keys()
+    keys = list(d.keys())
     if isinstance(keys, list) and len(keys)>0:
         max_key_len = max([len(str(k)) for k in keys])        
-    for key, value in d.items():
+    for key, value in list(d.items()):
         equal_offset = ' '*(max_key_len - len(str(key)))
         print('\t' * indent + str(key) + key_sep, end=' ')
         if isinstance(value, dict):
@@ -319,7 +326,7 @@ class ShortNameBuilder(Munch):
 
     def subset(self, selected_keys):
         subself = ShortNameBuilder(**self)
-        for k in subself.keys():
+        for k in list(subself.keys()):
             if k not in selected_keys and \
                '_ShortNameBuilder' not in k:
                 del subself[k]
@@ -348,8 +355,8 @@ def check_keys_exist(new, old):
 
     Utility function used internally.
     """
-    for key in new.keys():
-        if key not in old.keys():
+    for key in list(new.keys()):
+        if key not in list(old.keys()):
             raise Exception('Undefined parameter: "%s"' % key)
             
 def print_sizes(x):
@@ -374,7 +381,7 @@ def raw_confirm(message):
     :return: true if confirmation given, false otherwise
     """
     print(message, '(y/[n])')
-    confirmation = raw_input()
+    confirmation = input()
     if not confirmation:
         return False  # do not confirm by default
     else:

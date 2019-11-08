@@ -1,5 +1,12 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
+from builtins import str
+from builtins import map
+from builtins import zip
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import math, os, numpy as np, glob
 import scipy.ndimage.interpolation
 import skimage.transform as transform
@@ -35,12 +42,12 @@ def view_stack(ims, figsize=(20, 20), figshape=None,
         
     if figshape is None:
         cols = int(np.ceil(np.sqrt(n)))
-        rows = int(np.ceil(1.*n/cols))
+        rows = int(np.ceil(old_div(1.*n,cols)))
     else:
         rows, cols = figshape
     if vrange == 'all':
         if isinstance(ims, list):
-            mm = map(minmax, ims)
+            mm = list(map(minmax, ims))
             vrange = (min([p[0] for p in mm]), 
                       max([p[1] for p in mm]))
         else: 
@@ -74,7 +81,7 @@ def read_image(image_path, image_size=1):
         im = load_img(image_path)
         x = img_to_array(im)            
         if not image_size == 1:
-            new_size = map(int, (x.shape[0]*image_size, x.shape[1]*image_size))        
+            new_size = list(map(int, (x.shape[0]*image_size, x.shape[1]*image_size)))        
             x = transform.resize(x/255., new_size, mode='reflect')*255.
     return x
 
@@ -120,10 +127,10 @@ def extract_random_patch(im, patch_size=(224, 224), border=(0, 0)):
     Y_min, X_min = border
     Y_max, X_max = (H - H_crop - Y_min, W - W_crop - X_min)
     if Y_max < Y_min: 
-        Y_min = (H - H_crop) / 2
+        Y_min = old_div((H - H_crop), 2)
         Y_max = Y_min
     if X_max < X_min:
-        X_min = (W - W_crop) / 2
+        X_min = old_div((W - W_crop), 2)
         X_max = X_min
     Y0 = int(rand(1)*(Y_max-Y_min) + Y_min)
     X0 = int(rand(1)*(X_max-X_min) + X_min)    
@@ -150,7 +157,7 @@ def extract_patch(im, patch_size=(224, 224),
     Y_max, X_max   = (H - H_crop, W - W_crop)
     Yc, Xc         = H*Py, W*Px
 
-    X0, Y0 = Xc-W_crop/2, Yc-H_crop/2
+    X0, Y0 = Xc-old_div(W_crop,2), Yc-old_div(H_crop,2)
     X0, Y0 = min(max(int(X0), 0), X_max),\
              min(max(int(Y0), 0), Y_max)
 
@@ -254,8 +261,8 @@ def check_images(image_dir, image_types =\
     image_names_err = []
     image_names_all = []
     for (i, file_path) in enumerate(file_list):
-        if i % (len(file_list)/20) == 0: print(i, end=' ')
-        elif i % (len(file_list)/1000) == 0: print('.', end=' ')
+        if i % (old_div(len(file_list),20)) == 0: print(i, end=' ')
+        elif i % (old_div(len(file_list),1000)) == 0: print('.', end=' ')
 
         try:            
             file_dir, file_name = os.path.split(file_path)
@@ -287,7 +294,7 @@ def save_images_to_h5(image_path, h5_path, over_write=False,
         for i, batch in enumerate(chunks(file_list, batch_size)):
             if i % 10 == 0:
                 print(i*batch_size, end=' ')
-            image_names = [unicode(os.path.basename(path)) for path in batch]
+            image_names = [str(os.path.basename(path)) for path in batch]
             images = read_image_batch(batch, image_size=image_size_dst)
             h.write_data(images, dataset_names=image_names)            
 
@@ -302,7 +309,7 @@ def largest_rotated_rect(w, h, angle):
     Converted to Python by Aaron Snoswell
     """
 
-    quadrant = int(math.floor(angle / (math.pi / 2))) & 3
+    quadrant = int(math.floor(old_div(angle, (old_div(math.pi, 2))))) & 3
     sign_alpha = angle if ((quadrant & 1) == 0) else math.pi - angle
     alpha = (sign_alpha % math.pi + math.pi) % math.pi
 
@@ -316,7 +323,7 @@ def largest_rotated_rect(w, h, angle):
     length = h if (w < h) else w
 
     d = length * math.cos(alpha)
-    a = d * math.sin(alpha) / math.sin(delta)
+    a = old_div(d * math.sin(alpha), math.sin(delta))
 
     y = a * math.cos(gamma)
     x = y * math.tan(gamma)
@@ -326,7 +333,7 @@ def largest_rotated_rect(w, h, angle):
         bb_h - 2 * y
     )
 
-class ImageAugmenter:
+class ImageAugmenter(object):
     """
     Provides methods to easily transform images.
     Meant for creating custom image augmentation functions for training Keras models.
@@ -398,7 +405,7 @@ class ImageAugmenter:
                                                self.image.shape[1], 
                                                math.radians(self._rotation_angle))
                     x, y = self.image.shape, lrr
-                    border = ((x[0]-y[0])/2, (x[1]-y[1])/2)
+                    border = (old_div((x[0]-y[0]),2), old_div((x[1]-y[1]),2))
                 else:
                     border = (0, 0)
                 self.image = extract_random_patch(self.image,
@@ -443,7 +450,7 @@ class ImageAugmenter:
                 # choose minimum dimension
                 zoom_target = min(self.image.shape[0],
                                   self.image.shape[1])
-            zoom = 1. * target / zoom_target
+            zoom = old_div(1. * target, zoom_target)
         else:
             zoom = target
         zoom = (1-proportion) + proportion*zoom

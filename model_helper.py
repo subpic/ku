@@ -1,5 +1,10 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import map
+from builtins import str
+from builtins import zip
+from builtins import range
+from builtins import object
 import os, sys, keras, numbers, glob, shutil
 import multiprocessing as mp, pandas as pd, numpy as np
 from pprint import pprint
@@ -14,7 +19,7 @@ from .generators import *
 from .generic import *
 
 
-class ModelHelper:
+class ModelHelper(object):
     """
     Wrapper class that simplifies default usage of Keras for training, testing, logging,
     storage of models by removing the need for some repetitive code segments (boilerplate).
@@ -102,8 +107,8 @@ class ModelHelper:
                                                                  # inferred from self.gen_params.data_path
                             )
 
-        for key in params.keys():
-            if key not in self.params.keys():
+        for key in list(params.keys()):
+            if key not in list(self.params.keys()):
                 raise Exception('Undefined parameter:' + key)
 
         self.gen_params.update(gen_params)        
@@ -128,13 +133,13 @@ class ModelHelper:
         h = self
         tostr = lambda x: str(x) if x is not None else '?'
         format_size = lambda x: '[{}]'.format(','.join(map(tostr, x)))
-        loss2str = lambda x: (x if isinstance(x, str) else x.__name__)[:8]
+        loss2str = lambda x: (x if isinstance(x, basestring) else x.__name__)[:8]
 
-        loss = h.params.loss
+        loss = h.params.loss        
         if not isinstance(loss, dict):
             loss_str = loss2str(loss)
         else:
-            loss_str = '[%s]' % ','.join(map(loss2str, loss.values()))
+            loss_str = '[%s]' % ','.join(map(loss2str, list(loss.values())))
                 
         i = '{}{}'.format(len(h.model.inputs),
                            format_size(h.gen_params.input_shape))
@@ -330,7 +335,7 @@ class ModelHelper:
         else:
             r = self.model.evaluate(X_valid, y_valid, 
                                     batch_size=batch_size, verbose=0)
-        perf_metrics = dict(zip(self.model.metrics_names, r))
+        perf_metrics = dict(list(zip(self.model.metrics_names, r)))
         pretty(perf_metrics)
         return perf_metrics
     
@@ -403,7 +408,7 @@ class ModelHelper:
             y_pred = model.predict_generator(test_gen, workers=1, verbose=0,
                                              use_multiprocessing=False)
             if not remodel and output_layer is not None:
-                y_pred = dict(zip(model.output_names, y_pred))[output_layer]
+                y_pred = dict(list(zip(model.output_names, y_pred)))[output_layer]
             preds.append(np.squeeze(y_pred))
         return preds[0] if repeats == 1 else preds
 
@@ -487,10 +492,10 @@ class ModelHelper:
             ids = self.ids
         if isinstance(groups, numbers.Number):
             groups_count = groups
-            groups_list = map(str, range(groups))
+            groups_list = list(map(str, list(range(groups))))
         else:
             groups_count = len(groups)
-            groups_list  = map(str, groups)
+            groups_list  = list(map(str, groups))
 
         if file_path is None:         
             short_name = self.model_name.subset(['i', 'o'])
