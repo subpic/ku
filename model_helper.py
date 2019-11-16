@@ -254,8 +254,7 @@ class ModelHelper(object):
         :return:          training history from self.model.fit_generator()
         """
         ids = self.ids
-                   
-        print('\nTraining model:', self.model_name())
+        print('Training model:', self.model_name())
         
         if train_gen is True:
             train_gen = self.make_generator(ids[ids.set == 'training'])
@@ -321,23 +320,6 @@ class ModelHelper(object):
                              verbose         = verbose)
 
         return history
-
-    def validate(self, valid_gen=True, batch_size=32):                
-        if valid_gen is True:
-            ids = self.ids
-            valid_gen = self.make_generator(ids[ids.set == 'validation'],
-                                            shuffle       = True,
-                                            deterministic = True)        
-        print('Validating performance')
-        if issubclass(type(valid_gen), 
-                      keras.utils.Sequence): 
-            r = self.model.evaluate_generator(valid_gen, verbose=0)
-        else:
-            r = self.model.evaluate(X_valid, y_valid, 
-                                    batch_size=batch_size, verbose=0)
-        perf_metrics = dict(list(zip(self.model.metrics_names, r)))
-        pretty(perf_metrics)
-        return perf_metrics
     
     def clean_outputs(self):
         """
@@ -399,7 +381,7 @@ class ModelHelper(object):
                     outputs = output_layer.output
                 print('Output tensor:', outputs)
                 model = Model(inputs  = self.model.input, 
-                              outputs = outputs) 
+                              outputs = outputs)
         else: 
             model = self.model
 
@@ -409,8 +391,28 @@ class ModelHelper(object):
                                              use_multiprocessing=False)
             if not remodel and output_layer is not None:
                 y_pred = dict(list(zip(model.output_names, y_pred)))[output_layer]
-            preds.append(np.squeeze(y_pred))
+            preds.append(y_pred) #np.squeeze()
         return preds[0] if repeats == 1 else preds
+    
+    def validate(self, valid_gen=True, batch_size=32, recompile=True):
+        if valid_gen is True:
+            ids = self.ids
+            valid_gen = self.make_generator(ids[ids.set == 'validation'],
+                                            shuffle       = True,
+                                            deterministic = True)        
+        print('Validating performance')
+        if recompile: self.compile()
+            
+        if issubclass(type(valid_gen), 
+                      keras.utils.Sequence): 
+            r = self.model.evaluate_generator(valid_gen, verbose=0)
+        else:
+            X_valid, y_valid = valid_gen
+            r = self.model.evaluate(X_valid, y_valid, 
+                                    batch_size=batch_size, verbose=0)
+        perf_metrics = dict(list(zip(self.model.metrics_names, r)))
+        pretty(perf_metrics)
+        return perf_metrics 
 
     def set_trainable(self, index):
         """
@@ -475,7 +477,7 @@ class ModelHelper(object):
 
     def save_activations(self, output_layer=None, file_path=None, ids=None,
                          groups=1, verbose=False, over_write=False, name_suffix='',
-                         save_as_type=np.float32):
+                         save_as_type=np.float32, postprocess_fn=None):
         """
         Save activations from a particular `output_layer` to an HDF5 file.
 
@@ -522,6 +524,10 @@ class ModelHelper(object):
                                                 astype(save_as_type)
             if len(activ.shape)==1:
                 activ = np.expand_dims(activ, 0)
+            
+            if postprocess_fn:
+                activ = postprocess_fn(activ)
+                
             with H5Helper(file_path, 
                           over_write = over_write, 
                           verbose    = verbose) as h:

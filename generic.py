@@ -374,7 +374,6 @@ def print_sizes(x):
     elif hasattr(x, 'shape'):
         print(x.shape, end=' ')
     else: print(x, end=' ')
-    return ''
         
 def raw_confirm(message):
     """
