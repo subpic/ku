@@ -46,8 +46,9 @@ def fc_layers(input_layer,
               dropout_rates      = [0.25, 0.25, 0.5, 0],
               batch_norm         = False,
               l2_norm_inputs     = False,
-              kernel_regularizer = None,
-              out_activation     = 'linear'):
+              out_activation     = 'linear',
+              test_time_dropout  = False,
+              **fc_params):
     """
     Add a standard fully-connected (fc) chain of layers (functional Keras interface)
     with dropouts on top of an input layer. Optionally batch normalize, add regularizers
@@ -82,13 +83,16 @@ def fc_layers(input_layer,
             layer_type = 'out'
         x = Dense(fc_sizes[i], activation=act, 
                   name='%s_%s' % (name, layer_type),
-                  kernel_regularizer = kernel_regularizer,
-                  kernel_initializer='he_normal')(x)
+                  kernel_initializer='he_normal', **fc_params)(x)
         if batch_norm == 1 or (batch_norm == 2 and i<len(fc_sizes)-1): 
             x = BatchNormalization(name='%s_bn%d' % (name, i))(x)
         if dropout_rates[i] > 0:
-            x = Dropout(dropout_rates[i], 
-                        name='%s_do%d' % (name, i))(x)            
+            do_call = Dropout(dropout_rates[i], name = '%s_do%d' % (name, i))            
+            if test_time_dropout:
+                x = do_call(x, training=True)
+            else:
+                x = do_call(x)
+                
     return x
 
 def conv2d_bn(x, filters, num_row, num_col, padding='same',
@@ -296,37 +300,32 @@ def model_inceptionresnet_pooled(input_shape=(None, None, 3), pool_size=(5, 5),
 # RATING model utils
 # ------------------
 
-def test_rating_model(helper, output_layer=None, output_column=None, 
-                      test_set='test', accuracy_thresh=None, groups=1, 
-                      remodel=False, ids=None, show_plot=True):
+def test_rating_model(helper, ids_test=None, 
+                      output_layer=None, output_column=None, 
+                      groups=1, remodel=False, show_plot=True):
     """
     Test rating model performance. The output of the mode is assumed to be
     either a single score, or distribution of scores (can be a histogram).
 
     :param helper: ModelHelper object that contains the trained model
+    :param ids_test: optionally provide another set of data instances, replacing 
+                     those in `helper.ids`
     :param output_layer: the rating layer, if more than out output exists
                          if output_layer is None, we assume there is a single
                          rating output
     :param output_column: the column in ids that corresponds to the output
-    :param test_set: name of the test set in the helper `ids`
-                     allows to test model on validation, or training set
-    :param accuracy_thresh: compute binary classification accuracy, assuming a
-                            split of the rating scale at `accuracy_thresh`
-                            i.e. LQ class is score <= accuracy_thresh
     :param groups: if a number: repetitions of the testing procedure,
                                 after which the results are averaged
                    if list of strings: group names to repeat over,
                                        they are assumed to be different augmentations
     :param remodel: change structure of the model when changing `output_layer`, or not
-    :param ids: optionally provide another set of data instances,
-                replacing those in `helper.ids`
     :param show_plot: plot results vs ground-truth
     :return: (y_true, y_pred, SRCC, PLCC, ACC)
     """
-    print('Testing model')
     print('Model outputs:', helper.model.output_names)
-    if ids is None: ids = helper.ids
-    ids_test = ids if test_set is None else ids[ids.set==test_set]
+    if output_column is not None: 
+        print('Output column:', output_column)
+    if ids_test is None: ids_test = helper.ids[helper.ids.set=='test']
 
     if isinstance(groups, numbers.Number):
         test_gen = helper.make_generator(ids_test, 
@@ -355,6 +354,8 @@ def test_rating_model(helper, output_layer=None, output_column=None,
     if isinstance(y_pred, list):
         y_pred = old_div(reduce(lambda x, y: (x+y), y_pred), len(y_pred))
 
+    y_pred = np.squeeze(y_pred)
+        
     if y_pred.ndim == 2: 
         # for distributions
         print('Testing distributions')
@@ -375,27 +376,14 @@ def test_rating_model(helper, output_layer=None, output_column=None,
     # is not a multiple of batch_size
     y_test = y_test[:len(y_pred)]
     
-    SRCC_test = np.round(srocc(y_pred, y_test), 3)
-    PLCC_test = np.round(plcc(y_pred, y_test), 3)
-    print() 
-    print('Evaluated on', test_set + '-set' if test_set else 'all data') 
-    print('SRCC/PLCC:', SRCC_test, PLCC_test)
-
-    ACC_test = None
-    if accuracy_thresh is not None:
-        if not isinstance(accuracy_thresh, list):
-            accuracy_thresh = [accuracy_thresh]*2
-        # assume binary classification for scores the LQ class is MOS<=accuracy_thresh
-        ACC_test = old_div(np.sum((y_test <= accuracy_thresh[0]) ==
-                          (y_pred <= accuracy_thresh[1]), dtype=float), len(y_test))
-        print('ACCURACY:', ACC_test)
+    SRCC_test = round(srocc(y_pred, y_test), 3)
+    PLCC_test = round(plcc(y_pred, y_test), 3)
+    print('SRCC/PLCC: {}/{}'.format(SRCC_test, PLCC_test))
         
     if show_plot:
         plt.plot(y_pred, y_test, '.', markersize=1)
-        plt.xlabel('prediction')
-        plt.ylabel('ground-truth')
-        plt.show()
-    return y_test, y_pred, SRCC_test, PLCC_test, ACC_test
+        plt.xlabel('predicted'); plt.ylabel('ground-truth'); plt.show()
+    return y_test, y_pred, SRCC_test, PLCC_test
 
 
 def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
