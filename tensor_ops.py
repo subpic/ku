@@ -61,3 +61,29 @@ def make_loss(loss, **params_defa):
         return loss(*args, **kwargs)
     return custom_loss
 
+
+def get_plcc_dist_tf(scores_array=[1., 2, 3, 4, 5]):
+    """
+    Function generator for `plcc_dist_tf`
+    Computes the PLCC between the MOS values computed
+    from pairs of distributions of scores. Used as a metric.
+
+    :param scores_array: scale values
+    """
+    def plcc_dist_tf(x, y):
+        scores = K.constant(scores_array)
+        xm = K.sum((x / K.reshape(K.sum(x, 1), [-1, 1])) * scores, 1)
+        ym = K.sum((y / K.reshape(K.sum(y, 1), [-1, 1])) * scores, 1)
+        x_sd = K.std(xm)
+        y_sd = K.std(ym)
+        xm_center = xm - K.mean(xm)
+        ym_center = ym - K.mean(ym)
+        return K.mean(xm_center*ym_center)/(x_sd*y_sd + 1e-3)
+    return plcc_dist_tf
+
+def get_plcc_dist_loss(scores_array=[1., 2, 3, 4, 5]):
+    """Loss version of `plcc_dist_tf`"""
+    plcc_dist_tf = get_plcc_dist_tf(scores_array)
+    def plcc_dist_loss(x, y):
+        return (1-plcc_dist_tf(x, y))/2
+    return plcc_dist_loss
