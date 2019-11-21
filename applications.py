@@ -442,8 +442,8 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
                            random_state=random_state,
                            stratify=strata_valid)
         
-    print('Train size:', len(idx_train), 'Validation size:',\
-            len(idx_valid), 'Test size:', len(idx_test))
+    print('Train size: {}, Validation size: {}, Test size: {}'.\
+          format(len(idx_train), len(idx_valid), len(idx_test)))
     
     ids.loc[idx_train, 'set'] = 'training'
     ids.loc[idx_valid, 'set'] = 'validation'
