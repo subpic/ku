@@ -321,7 +321,7 @@ class ModelHelper(object):
 
         return history
     
-    def clean_outputs(self):
+    def clean_outputs(self, force=False):
         """
         Delete training logs or models created by the current helper configuration.
         Identifies the logs by the configuration paths and `self.model_name`.
@@ -335,7 +335,7 @@ class ModelHelper(object):
         if os.path.exists(log_dir):
             print('Found logs:')
             print(log_dir)
-            if raw_confirm('Delete?'):
+            if force or raw_confirm('Delete?'):
                 print('Deleting', log_dir)
                 shutil.rmtree(log_dir)
         else:
@@ -344,7 +344,7 @@ class ModelHelper(object):
         if model_files:
             print('Found model(s):')
             print(model_files)
-            if raw_confirm('Delete?'):
+            if force or raw_confirm('Delete?'):
                 for mf in model_files: 
                     print('Deleting', mf)
                     os.unlink(mf)
