@@ -45,7 +45,9 @@ def fc_layers(input_layer,
               fc_sizes           = [2048, 1024, 256, 1],
               dropout_rates      = [0.25, 0.25, 0.5, 0],
               batch_norm         = False,
-              l2_norm_inputs     = False,
+              l2_norm_inputs     = False,              
+              activation         = 'relu',
+              initialization     = 'he_normal',
               out_activation     = 'linear',
               test_time_dropout  = False,
               **fc_params):
@@ -71,23 +73,29 @@ def fc_layers(input_layer,
     if l2_norm_inputs:
         x = Lambda(lambda x: K.tf.nn.l2_normalize(x, 1))(input_layer)
 
-    assert len(fc_sizes) == len(dropout_rates),\
+    assert dropout_rates is None or (len(fc_sizes) == len(dropout_rates)),\
            'Each FC layer should have a corresponding dropout rate'
 
+    if activation.lower() == 'selu':
+        dropout_call = AlphaDropout
+    else:
+        dropout_call = Dropout
+        
     for i in range(len(fc_sizes)):
         if i < len(fc_sizes)-1:
-            act = 'relu'
+            act = activation
             layer_type = 'fc%d' % i
         else:
             act  = out_activation
             layer_type = 'out'
         x = Dense(fc_sizes[i], activation=act, 
                   name='%s_%s' % (name, layer_type),
-                  kernel_initializer='he_normal', **fc_params)(x)
-        if batch_norm == 1 or (batch_norm == 2 and i<len(fc_sizes)-1): 
+                  kernel_initializer=initialization, 
+                  **fc_params)(x)
+        if batch_norm > 0 and i < ( len(fc_sizes)-(batch_norm-1) ):
             x = BatchNormalization(name='%s_bn%d' % (name, i))(x)
-        if dropout_rates[i] > 0:
-            do_call = Dropout(dropout_rates[i], name = '%s_do%d' % (name, i))            
+        if dropout_rates is not None and dropout_rates[i] > 0:
+            do_call = dropout_call(dropout_rates[i], name = '%s_do%d' % (name, i))            
             if test_time_dropout:
                 x = do_call(x, training=True)
             else:
@@ -381,7 +389,7 @@ def test_rating_model(helper, ids_test=None,
     print('SRCC/PLCC: {}/{}'.format(SRCC_test, PLCC_test))
         
     if show_plot:
-        plt.plot(y_pred, y_test, '.', markersize=1)
+        plt.plot(y_pred, y_test, '.', markersize=0.5)
         plt.xlabel('predicted'); plt.ylabel('ground-truth'); plt.show()
     return y_test, y_pred, SRCC_test, PLCC_test
 
@@ -400,7 +408,7 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
 
     :param ids: pd.DataFrame
     :param stratify_on: column name from `ids` to stratify
-                        (class balancing) the partitions on
+                        ("class balance") the partitions on
     :param test_size: ratio (or number) of rows to assign to each of
                       test and validation sets respectively
                       e.g. (<validation size>, <test size>) or
@@ -432,14 +440,14 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
     idx_train, idx_valid = train_test_split(idx_train_valid,
                            test_size=test_size[0], 
                            random_state=random_state,
-                           stratify=strata_valid)  
+                           stratify=strata_valid)
         
     print('Train size:', len(idx_train), 'Validation size:',\
             len(idx_valid), 'Test size:', len(idx_test))
     
     ids.loc[idx_train, 'set'] = 'training'
     ids.loc[idx_valid, 'set'] = 'validation'
-    ids.loc[idx_test,  'set'] = 'test'    
+    ids.loc[idx_test,  'set'] = 'test'
     if save_path is not None:
         ids.to_csv(save_path, index=False)
         
