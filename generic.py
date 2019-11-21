@@ -9,6 +9,7 @@ import numpy as np, pandas as pd
 import multiprocessing as mp
 import os, scipy, h5py, time, sys
 from munch import Munch
+from sklearn.model_selection import train_test_split
 
 if sys.version_info.major == 2:        
     input = raw_input
@@ -410,3 +411,16 @@ class Timer(object):
         if self.name:
             print(('[%s]' % self.name), end=' ')
         print('elapsed: %s seconds' % round(time.time() - self.tstart, 4))
+
+        
+def partition_rows(t, test_size=0.2, set_names=['training', 'test'], 
+                   random_state=42, copy=True):
+    if copy: t = t.copy()
+    t = t.reset_index(drop=True)
+    itrain, itest = train_test_split(list(range(len(t))),
+                                     test_size=test_size,
+                                     random_state=random_state)   
+    t.loc[itrain, 'set'] = set_names[0]
+    t.loc[itest,  'set'] = set_names[1]
+#     t.set = t.set.astype('category')
+    return t
