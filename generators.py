@@ -273,3 +273,23 @@ class DataGeneratorDataFrame(DataGeneratorDisk):
         X = np.array(ids_batch.loc[:, self.inputs])
         y = np.array(ids_batch.loc[:, self.outputs])
         return (X, y)
+
+class GeneratorStack(keras.utils.Sequence):
+    """
+    Creates an aggregator generator that feeds from multiple generators.
+    """
+    def __init__(self, generator_list):
+        self.gens = generator_list
+        
+    def __len__(self):
+        """Number of batches per epoch"""        
+        return len(self.gens[0])
+
+    def __getitem__(self, index):
+        """Generate one batch of data"""
+        X, y = [],[]
+        for g in self.gens:
+            X_, y_ = g[index]
+            X.append(X_)
+            y.append(y_)
+        return (X, y)
