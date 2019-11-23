@@ -43,6 +43,42 @@ def test_DataGeneratorDisk():
     g.inputs_df = ['score', 'score']
     g.inputs = []
     g.outputs = []
+    assert gen.get_sizes(g[0]) == '([array<2,2>], [])'
+
+    g.inputs_df = [['score'], ('score','score')]
+    assert gen.get_sizes(g[0]) == '([array<2,1>, array<2,2>], [])'
+
+    g.inputs_df = []
+    g.outputs = ['score']
+    assert gen.get_sizes(g[0]) == '([], [array<2,1>])'
+
+    g.outputs = ['score',['score']]
+    with pytest.raises(AssertionError): g[0]
+
+    g.outputs = [['score'],['score']]
+    assert gen.get_sizes(g[0]) == '([], [array<2,1>, array<2,1>])'
+
+def test_H5Reader_and_Writer():
+    with gen.H5Helper('data.h5', over_write=True) as h:
+        data = np.expand_dims(np.array(ids.score), 1)
+        h.write_data(data, list(ids.filename))
+
+    with gen.H5Helper('data.h5', 'r') as h:
+        data = h.read_data(list(ids.filename))
+        assert all(data == np.array([[1],[2],[3],[4]]))
+        
+def test_DataGeneratorHDF5():
+
+    gen_params_local = gen_params.copy()
+    gen_params_local.update(data_path='data.h5', inputs=['filename'])    
+    g = gr.DataGeneratorHDF5(ids, **gen_params_local)
+    
+    assert gen.get_sizes(g[0]) == '([array<2,1>], [array<2,1>])'
+    
+    g.inputs_df = ['score', 'score']
+    g.inputs = []
+    g.outputs = []
+    assert gen.get_sizes(g[0]) == '([array<2,2>], [])'
 
     g.inputs_df = [['score'], ('score','score')]
     assert gen.get_sizes(g[0]) == '([array<2,1>, array<2,2>], [])'
