@@ -36,18 +36,15 @@ class DataGeneratorDisk(keras.utils.Sequence):
     process_args (None, dict):  dictionary of arguments to pass to `process_fn`
     """
     def __init__(self, ids, data_path, **args):
-        params_defa = Munch(ids           = ids,      data_path = data_path,
-                            batch_size    = 32,       shuffle = True,
+        params_defa = Munch(ids           = ids,   data_path = data_path,
+                            batch_size    = 32,    shuffle = True,
                             input_shape   = (224, 224, 3), process_fn = None,
-                            deterministic = None,     inputs=('image_name',),
-                            inputs_df   = None,       outputs       = ('MOS',), 
-                            verbose = False,          fixed_batches = False,
-                            process_args = None)
+                            deterministic = None,  inputs=('image_name',),
+                            inputs_df     = None,  outputs       = ('MOS',), 
+                            verbose       = False, fixed_batches = False,
+                            process_args  = None)
         check_keys_exist(args, params_defa)
         params = updated_dict(params_defa, **args)  # update only existing
-        params.inputs    = force_tuple(params.inputs)
-        params.inputs_df = force_tuple(params.inputs_df)
-        params.outputs   = force_tuple(params.outputs)
         params.deterministic = {True: 42, False: None}.\
                                get(params.deterministic,
                                    params.deterministic)
@@ -77,34 +74,35 @@ class DataGeneratorDisk(keras.utils.Sequence):
         if self.shuffle:
             np.random.shuffle(self.indexes)
 
+    def _read_data(self, ids_batch, accessor):        
+        X = []
+        if accessor:
+            assert isinstance(accessor, (tuple, list)) or callable(accessor)
+
+            if callable(accessor):
+                X = accessor(ids_batch)
+            elif isinstance(accessor, (list, tuple)):
+                if all(isinstance(a, (list, tuple)) for a in accessor):
+                    X = [np.array(ids_batch.loc[:,a]) for a in accessor]
+                else:
+                    assert all(not isinstance(a, (list, tuple)) for a in accessor)
+                    X = [np.array(ids_batch.loc[:,accessor])]
+            else:
+                 raise Exception('Wrong generator input/output specifications')
+                            
+        return X
+    
     def _data_generation(self, ids_batch):
         """Generates image-stack + outputs containing batch_size samples"""
         params = self
         np.random.seed(self.deterministic)        
         
-        # return values from `outputs` columns
-        outputs = self.outputs
-        if outputs is not None:
-            if (isinstance(outputs, (list, tuple)) and
-                isinstance(outputs[0], (list, tuple))):
-                y = [np.array(ids_batch.loc[:,o]) for o in outputs]
-            else:
-                y = np.array(ids_batch.loc[:,outputs])
-        else:
-            y = None
-
-        # build array for `inputs[_df]` columns
-        X_list = []
-        inputs_df = params.inputs_df
-        if inputs_df is not None:
-            if (isinstance(inputs_df, (list, tuple)) and
-                isinstance(inputs_df[0], (list, tuple))):
-                X_df = [np.array(ids_batch.loc[:,idf]) for idf in inputs_df]
-            else:
-                X_df = [np.array(ids_batch.loc[:,inputs_df])]
-            X_list.extend(X_df)
+        y = self._read_data(ids_batch, params.outputs)        
+        X_list = self._read_data(ids_batch, params.inputs_df)
             
-        for input_name in self.inputs:
+        assert isinstance(params.inputs, (tuple, list))
+
+        for input_name in params.inputs:
             data = []
             # read the data from disk into a list
             for i, row in enumerate(ids_batch.itertuples()):
@@ -134,7 +132,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
                 X_list.append(data_new)
 
         np.random.seed(None)
-        return (X_list[0], y) if (len(X_list) == 1) else (X_list, y)
+        return (X_list, y)
 
 
 class DataGeneratorHDF5(DataGeneratorDisk):
@@ -173,10 +171,7 @@ class DataGeneratorHDF5(DataGeneratorDisk):
                             input_shape = None)
 
         check_keys_exist(args, params_defa)
-        params = updated_dict(params_defa, **args) # update only existing
-        params.inputs    = force_tuple(params.inputs)
-        params.inputs_df = force_tuple(params.inputs_df)
-        params.outputs   = force_tuple(params.outputs)
+        params = updated_dict(params_defa, **args) # update only existing       
         params.process_args  = params.process_args or {}
         params.group_names   = params.group_names or [None]
         params.deterministic = {True: 42, False: None}.\
@@ -191,26 +186,13 @@ class DataGeneratorHDF5(DataGeneratorDisk):
     def _data_generation(self, ids_batch):
         """Generates data containing batch_size samples"""
         params = self
-        np.random.seed(params.deterministic)
+        np.random.seed(params.deterministic)        
+        
+        y = self._read_data(ids_batch, params.outputs)
+        X_list = self._read_data(ids_batch, params.inputs_df)
 
-        outputs = params.outputs
-        if (isinstance(outputs, (list, tuple)) and
-            isinstance(outputs[0], (list, tuple))):
-            y = [np.array(ids_batch.loc[:, o]) for o in outputs]
-        else:
-            y = np.array(ids_batch.loc[:, outputs])
-            
-        # build array for `inputs[_df]` columns
-        X_list = []
-        inputs_df = params.inputs_df
-        if inputs_df is not None:
-            if (isinstance(inputs_df, (list, tuple)) and
-                isinstance(inputs_df[0], (list, tuple))):
-                X_df = [np.array(ids_batch.loc[:,idf]) for idf in inputs_df]
-            else:
-                X_df = [np.array(ids_batch.loc[:,inputs_df])]
-            X_list.extend(X_df)
-
+        assert isinstance(params.inputs, (tuple, list))
+        
         with H5Helper(params.data_path, file_mode='r',
                       memory_mapped=params.memory_mapped) as h:
             # group_names are randomly sampled from meta-groups 
@@ -249,43 +231,8 @@ class DataGeneratorHDF5(DataGeneratorDisk):
                         X_list.append(data)
 
         np.random.seed(None)
-        return (X_list[0], y) if (len(X_list) == 1) else (X_list, y)
+        return (X_list, y)
 
-
-class DataGeneratorDataFrame(DataGeneratorDisk):
-    """
-    Generates data for training Keras models
-    - similar to the `DataGeneratorDisk`, returned values are taken from the ids DataFrame itself
-    - inherits from `DataGeneratorDisk`, a child of keras.utils.Sequence
-    - minimal interface compared to the other generators
-
-    ARGUMENTS
-    ids (pandas.dataframe): table containing the input and output variables
-    batch_size (int):       how many rows to read at a time
-    shuffle (bool):         randomized reading order
-    deterministic (None, int): random seed for shuffling order
-    inputs (strings tuple):    column names from `ids` returns values from the DataFrame itself
-    outputs (strings tuple):   column names from `ids`, returns values from the DataFrame itself
-    verbose (bool):            logging verbosity
-    fixed_batches (bool):      only return full batches, ignore the last incomplete batch if needed
-    """
-    def __init__(self, ids, inputs, outputs, verbose=False,
-                 batch_size=1024, shuffle=True, deterministic=False, **kwargs):
-        self.ids     = ids
-        self.inputs  = force_tuple(inputs)
-        self.outputs = force_tuple(outputs)
-        self.shuffle = shuffle
-        self.verbose = verbose
-        self.batch_size    = batch_size
-        self.fixed_batches = False
-        self.deterministic = deterministic
-        self.on_epoch_end()  # initialize indexes
-
-    def _data_generation(self, ids_batch):
-        """Generates data containing batch_size samples"""
-        X = np.array(ids_batch.loc[:, self.inputs])
-        y = np.array(ids_batch.loc[:, self.outputs])
-        return (X, y)
 
 class GeneratorStack(keras.utils.Sequence):
     """
