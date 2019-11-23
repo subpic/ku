@@ -89,7 +89,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
                     X = [np.array(ids_batch.loc[:,accessor])]
             else:
                  raise Exception('Wrong generator input/output specifications')
-                            
+
         return X
     
     def _data_generation(self, ids_batch):
@@ -193,42 +193,43 @@ class DataGeneratorHDF5(DataGeneratorDisk):
 
         assert isinstance(params.inputs, (tuple, list))
         
-        with H5Helper(params.data_path, file_mode='r',
-                      memory_mapped=params.memory_mapped) as h:
-            # group_names are randomly sampled from meta-groups 
-            # i.e. when group_names = [[group_names1], [group_names2]]
-            group_names = params.group_names
-            if isinstance(group_names[0], (list, tuple)):
-                idx = np.random.randint(0, len(group_names))
-                group_names = group_names[idx]
+        if params.data_path:
+            with H5Helper(params.data_path, file_mode='r',
+                          memory_mapped=params.memory_mapped) as h:
+                # group_names are randomly sampled from meta-groups 
+                # i.e. when group_names = [[group_names1], [group_names2]]
+                group_names = params.group_names
+                if isinstance(group_names[0], (list, tuple)):
+                    idx = np.random.randint(0, len(group_names))
+                    group_names = group_names[idx]
 
-            # get data for each input and add it to X_list
-            for group_name in group_names:
-                for input_name in params.inputs:
-                    # get data
-                    names = ids_batch.loc[:,input_name]
-                    if params.random_group:
-                        data = h.read_data_random_group(names)
-                    elif group_name is None:
-                        data = h.read_data(names)
-                    else:
-                        data = h.read_data(names, group_names=[group_name])[0]
-                    if data.dtype != np.float32:
-                        data = data.astype(np.float32)
+                # get data for each input and add it to X_list
+                for group_name in group_names:
+                    for input_name in params.inputs:
+                        # get data
+                        names = ids_batch.loc[:,input_name]
+                        if params.random_group:
+                            data = h.read_data_random_group(names)
+                        elif group_name is None:
+                            data = h.read_data(names)
+                        else:
+                            data = h.read_data(names, group_names=[group_name])[0]
+                        if data.dtype != np.float32:
+                            data = data.astype(np.float32)
 
-                    # add to X_list
-                    if params.process_fn not in [None, False]:
-                        for args in params.process_args.get(input_name,[{}]):
-                            data_new = None
-                            for i in range(len(data)):
-                                data_i = params.process_fn(data[i,...], **args)
-                                if data_new is None:
-                                    data_new = np.zeros((len(data),)+data_i.shape,
-                                                        dtype=np.float32)
-                                data_new[i,...] = data_i
-                            X_list.append(data_new)
-                    else:
-                        X_list.append(data)
+                        # add to X_list
+                        if params.process_fn not in [None, False]:
+                            for args in params.process_args.get(input_name,[{}]):
+                                data_new = None
+                                for i in range(len(data)):
+                                    data_i = params.process_fn(data[i,...], **args)
+                                    if data_new is None:
+                                        data_new = np.zeros((len(data),)+data_i.shape,
+                                                            dtype=np.float32)
+                                    data_new[i,...] = data_i
+                                X_list.append(data_new)
+                        else:
+                            X_list.append(data)
 
         np.random.seed(None)
         return (X_list, y)
