@@ -70,6 +70,8 @@ class H5Helper(object):
         :param group_names: None, or list of strings
         """
         with self._lock:
+            assert isinstance(data, np.ndarray) and\
+                   isinstance(dataset_names, (list, pd.core.series.Series))
             hf = self.hf
             if group_names is None:
                 assert not isinstance(data, list),\
@@ -107,6 +109,7 @@ class H5Helper(object):
         """
         with self._lock:
             hf = self.hf
+            assert isinstance(dataset_names, (list, pd.core.series.Series))
             if group_names is None:
                 return self._read_datasets(hf, dataset_names)
             else:
