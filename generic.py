@@ -362,19 +362,25 @@ def check_keys_exist(new, old):
         if key not in list(old.keys()):
             raise Exception('Undefined parameter: "%s"' % key)
             
-def print_sizes(x):
+def get_sizes(x):
     """
-    Recursively prints the shapes of elements in lists.
+    String representation of the shapes of arrays in lists/tuples.
     """
     if isinstance(x, list) or isinstance(x, tuple):
-        print('[', end=' ')
-        for _x_ in x: 
-            print_sizes(_x_)
-            print(',', end=' ')
-        print('\b\b]', end=' ')
+        content = ', '.join([get_sizes(_x_) for _x_ in x])
+        if isinstance(x, list):
+            return '[' + content + ']'
+        else:
+            return '(' + content + ')'
     elif hasattr(x, 'shape'):
-        print(x.shape, end=' ')
-    else: print(x, end=' ')
+        return 'array<' + ','.join(map(str, x.shape)) + '>'
+    else: return '<1>'
+            
+def print_sizes(x):
+    """
+    Prints get_sizes(x)
+    """
+    print(get_sizes(x))
         
 def raw_confirm(message):
     """
