@@ -32,3 +32,27 @@ def test_get_sizes():
     x = np.array([[1,2,3]])
     assert gen.get_sizes(([x.T],1,[4,5])) == '([array<3,1>], <1>, [<1>, <1>])'
     assert gen.get_sizes(np.array([[1,[1,2]]])) == 'array<1,2>'
+
+    
+def test_DataGeneratorDisk():        
+    g = gr.DataGeneratorDisk(ids, **gen_params)
+    
+    g.inputs = ['filename', 'filename']
+    assert gen.get_sizes(g[0]) == '([array<2,224,224,3>, array<2,224,224,3>], [array<2,1>])'
+
+    g.inputs_df = ['score', 'score']
+    g.inputs = []
+    g.outputs = []
+
+    g.inputs_df = [['score'], ('score','score')]
+    assert gen.get_sizes(g[0]) == '([array<2,1>, array<2,2>], [])'
+
+    g.inputs_df = []
+    g.outputs = ['score']
+    assert gen.get_sizes(g[0]) == '([], [array<2,1>])'
+
+    g.outputs = ['score',['score']]
+    with pytest.raises(AssertionError): g[0]
+
+    g.outputs = [['score'],['score']]
+    assert gen.get_sizes(g[0]) == '([], [array<2,1>, array<2,1>])'
