@@ -413,14 +413,14 @@ class Timer(object):
         print('elapsed: %s seconds' % round(time.time() - self.tstart, 4))
 
         
-def partition_rows(t, test_size=0.2, set_names=['training', 'test'], 
-                   random_state=42, copy=True):
+def partition_rows(t, test_size=0.2, set_name='set', 
+                   set_values=['training', 'test'], 
+                   random_state=None, copy=True):
     if copy: t = t.copy()
     t = t.reset_index(drop=True)
     itrain, itest = train_test_split(list(range(len(t))),
                                      test_size=test_size,
-                                     random_state=random_state)   
-    t.loc[itrain, 'set'] = set_names[0]
-    t.loc[itest,  'set'] = set_names[1]
-#     t.set = t.set.astype('category')
+                                     random_state=random_state)
+    t.loc[itrain, set_name] = set_values[0]
+    t.loc[itest,  set_name] = set_values[1]
     return t
