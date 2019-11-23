@@ -93,10 +93,16 @@ class DataGeneratorDisk(keras.utils.Sequence):
         else:
             y = None
 
-        # build array from reading images in `inputs` columns
-        X_list = []        
-        if params.inputs_df is not None:
-            X_list.append(np.array(ids_batch.loc[:, params.inputs_df]))
+        # build array for `inputs[_df]` columns
+        X_list = []
+        inputs_df = params.inputs_df
+        if inputs_df is not None:
+            if (isinstance(inputs_df, (list, tuple)) and
+                isinstance(inputs_df[0], (list, tuple))):
+                X_df = [np.array(ids_batch.loc[:,idf]) for idf in inputs_df]
+            else:
+                X_df = [np.array(ids_batch.loc[:,inputs_df])]
+            X_list.extend(X_df)
             
         for input_name in self.inputs:
             data = []
@@ -193,10 +199,17 @@ class DataGeneratorHDF5(DataGeneratorDisk):
             y = [np.array(ids_batch.loc[:, o]) for o in outputs]
         else:
             y = np.array(ids_batch.loc[:, outputs])
-
+            
+        # build array for `inputs[_df]` columns
         X_list = []
-        if params.inputs_df is not None:
-            X_list.append(np.array(ids_batch.loc[:, params.inputs_df]))
+        inputs_df = params.inputs_df
+        if inputs_df is not None:
+            if (isinstance(inputs_df, (list, tuple)) and
+                isinstance(inputs_df[0], (list, tuple))):
+                X_df = [np.array(ids_batch.loc[:,idf]) for idf in inputs_df]
+            else:
+                X_df = [np.array(ids_batch.loc[:,inputs_df])]
+            X_list.extend(X_df)
 
         with H5Helper(params.data_path, file_mode='r',
                       memory_mapped=params.memory_mapped) as h:

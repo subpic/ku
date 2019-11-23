@@ -320,7 +320,7 @@ class ModelHelper(object):
                              verbose         = verbose)
 
         return history
-    
+
     def clean_outputs(self, force=False):
         """
         Delete training logs or models created by the current helper configuration.
