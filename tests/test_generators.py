@@ -68,7 +68,6 @@ def test_H5Reader_and_Writer():
         assert all(data == np.array([[1],[2],[3],[4]]))
         
 def test_DataGeneratorHDF5():
-
     gen_params_local = gen_params.copy()
     gen_params_local.update(data_path='data.h5', inputs=['filename'])    
     g = gr.DataGeneratorHDF5(ids, **gen_params_local)
@@ -92,3 +91,23 @@ def test_DataGeneratorHDF5():
 
     g.outputs = [['score'],['score']]
     assert gen.get_sizes(g[0]) == '([], [array<2,1>, array<2,1>])'
+    
+def test_DataGeneratorHDF5_callable_outputs():
+    d = {'features': [1, 2, 3, 4, 5],
+         'mask': [1, 0, 1, 1, 0]}
+    df = pd.DataFrame(data=d)
+
+    def filter_features(df):
+        return np.array(df.loc[df['mask']==1,['features']])
+
+    gen_params.update(data_path = None, 
+                      outputs   = filter_features,
+                      inputs    = [],
+                      inputs_df = ['features'],
+                      shuffle   = False,
+                      batch_size= 5)
+
+    g = gr.DataGeneratorHDF5(df, **gen_params)
+    assert gen.get_sizes(g[0]) == '([array<5,1>], array<3,1>)'
+    assert all(np.squeeze(g[0][0]) == np.arange(1,6))
+    assert all(np.squeeze(g[0][1]) == [1,3,4])
