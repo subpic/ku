@@ -287,7 +287,7 @@ def chunks(l, n):
     for i in range(0, len(l), n):
         yield l[i:i + n]
 
-def pretty(d, indent=0, key_sep=':', trim=True):
+def pretty_print(d, indent=0, key_sep=':', trim=True):
     """
     Pretty print dictionary, recursively.
 
@@ -315,6 +315,8 @@ def pretty(d, indent=0, key_sep=':', trim=True):
             if len(value_str) > 70:
                 value_str = value_str[:70] + ' [...]' 
             print(equal_offset + value_str)
+            
+pretty = pretty_print
 
 class ShortNameBuilder(Munch):
     """
@@ -323,8 +325,8 @@ class ShortNameBuilder(Munch):
 
     For internal use in ModelHelper.
     """
-    def __init__(self, prefix='', sep=('', '_'), max_len=32,
-                 **kwargs):
+    def __init__(self, prefix='', sep=('', '_'), 
+                 max_len=32, **kwargs):
         self.__prefix  = prefix
         self.__sep     = sep
         self.__max_len = max_len
@@ -365,7 +367,7 @@ def check_keys_exist(new, old):
         if key not in list(old.keys()):
             raise Exception('Undefined parameter: "%s"' % key)
             
-def get_sizes(x):
+def get_sizes(x, array_marker='array'):
     """
     String representation of the shapes of arrays in lists/tuples.
     """
@@ -376,14 +378,14 @@ def get_sizes(x):
         else:
             return '(' + content + ')'
     elif hasattr(x, 'shape'):
-        return 'array<' + ','.join(map(str, x.shape)) + '>'
+        return array_marker + '<' + ','.join(map(str, x.shape)) + '>'
     else: return '<1>'
             
-def print_sizes(x):
+def print_sizes(x, array_marker=''):
     """
     Prints get_sizes(x)
     """
-    print(get_sizes(x))
+    print(get_sizes(x, array_marker))
         
 def raw_confirm(message):
     """
