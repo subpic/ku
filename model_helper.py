@@ -9,6 +9,7 @@ import os, sys, keras, numbers, glob, shutil
 import multiprocessing as mp, pandas as pd, numpy as np
 from pprint import pprint
 from munch import Munch
+from collections import OrderedDict
 
 from keras.callbacks import TensorBoard, ModelCheckpoint, Callback, EarlyStopping
 from keras import optimizers
@@ -391,10 +392,11 @@ class ModelHelper(object):
                                              use_multiprocessing=False)
             if not remodel and output_layer is not None:
                 y_pred = dict(list(zip(model.output_names, y_pred)))[output_layer]
-            preds.append(y_pred) #np.squeeze()
+            preds.append(y_pred)
         return preds[0] if repeats == 1 else preds
     
-    def validate(self, valid_gen=True, batch_size=32, recompile=True):
+    def validate(self, valid_gen=True, verbose=1, 
+                 batch_size=32, recompile=True):
         if valid_gen is True:
             ids = self.ids
             valid_gen = self.make_generator(ids[ids.set == 'validation'],
@@ -402,16 +404,20 @@ class ModelHelper(object):
                                             deterministic = True)        
         print('Validating performance')
         if recompile: self.compile()
-            
+
         if issubclass(type(valid_gen), 
                       keras.utils.Sequence): 
-            r = self.model.evaluate_generator(valid_gen, verbose=0)
+            r = self.model.evaluate_generator(valid_gen, 
+                                              verbose=verbose)
         else:
             X_valid, y_valid = valid_gen
             r = self.model.evaluate(X_valid, y_valid, 
-                                    batch_size=batch_size, verbose=0)
+                                    batch_size=batch_size, 
+                                    verbose=verbose)
         perf_metrics = dict(list(zip(self.model.metrics_names, r)))
-        pretty(perf_metrics)
+        if verbose==2:
+            pretty(OrderedDict((k, perf_metrics[k]) 
+                               for k in sorted(perf_metrics.keys())))
         return perf_metrics 
 
     def set_trainable(self, index):
@@ -452,7 +458,8 @@ class ModelHelper(object):
                 print('Model loaded:', model_file_name)
             return True
 
-    def save_model(self, weights_only=False, model=None, name_extras=''):
+    def save_model(self, weights_only=False, model=None, 
+                   name_extras='', best=True, verbose=1):
         """
         Save model to HDF5 file.
 
@@ -461,19 +468,24 @@ class ModelHelper(object):
         :param model: specify a particular model instance,
                       otherwise self.model is saved
         :param name_extras: append this to model_name
+        :param best: save as best model, otherwise final model
         """
         model = model or self.model
-        print('Saving model', model.name, 'spanning',\
-              len(self.model.layers), 'layers')
+        if verbose:
+            print('Saving model', model.name, 'spanning',\
+                  len(self.model.layers), 'layers')
+        model_type = 'best' if best else 'final'
         if weights_only:
-            model_file = self.model_name() + name_extras + '_final_weights.h5'
+            model_file = self.model_name() + name_extras + '_' + model_type + '_weights.h5'
             model.save_weights(os.path.join(self.params.models_root, model_file))
-            print('Model weights saved:', model_file)
+            if verbose:
+                print('Model weights saved:', model_file)
         else:
-            model_file = self.model_name() + name_extras + '_final.h5'
+            model_file = self.model_name() + name_extras + '_' + model_type + '.h5'
             model.compile(optimizer=self.params.optimizer, loss="mean_absolute_error")
             model.save(os.path.join(self.params.models_root, model_file))
-            print('Model saved:', model_file)
+            if verbose:
+                print('Model saved:', model_file)
 
     def save_activations(self, output_layer=None, file_path=None, ids=None,
                          groups=1, verbose=False, over_write=False, name_suffix='',
