@@ -251,6 +251,6 @@ class GeneratorStack(keras.utils.Sequence):
         X, y = [],[]
         for g in self.gens:
             X_, y_ = g[index]
-            X.append(X_)
-            y.append(y_)
+            X.extend(X_)
+            y.extend(y_)
         return (X, y)
