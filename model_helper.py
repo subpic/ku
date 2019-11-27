@@ -192,7 +192,7 @@ class ModelHelper(object):
         params.update(kwargs)
         return params
     
-    def make_generator(self, ids, **kwargs):
+    def make_generator(self, ids, subset=None, **kwargs):
         """
         Create a generator of `self.params.gen_class` using new `ids`.
 
@@ -200,12 +200,12 @@ class ModelHelper(object):
         :param kwargs: updated parameters of the generator
         :return: Sequence (generator)
         """
-        # an alternative to using the private method:
-        # params = updated_dict(self.gen_params,
-        #                       only_existing=False,
-        #                       **kwargs)
         params = self._updated_gen_params(**kwargs)
-        return self.params.gen_class(ids, **params)
+        if subset:
+            ids_ = ids[ids.set==subset]
+        else:
+            ids_ = ids
+        return self.params.gen_class(ids_, **params)
 
     def test_generator(self, input_idx=0):
         """

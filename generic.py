@@ -372,7 +372,7 @@ def get_sizes(x, array_marker='array'):
     String representation of the shapes of arrays in lists/tuples.
     """
     if isinstance(x, list) or isinstance(x, tuple):
-        content = ', '.join([get_sizes(_x_) for _x_ in x])
+        content = ', '.join([get_sizes(_x_, array_marker) for _x_ in x])
         if isinstance(x, list):
             return '[' + content + ']'
         else:
@@ -385,7 +385,7 @@ def print_sizes(x, array_marker=''):
     """
     Prints get_sizes(x)
     """
-    print(get_sizes(x, array_marker))
+    print(get_sizes(x, array_marker=array_marker))
         
 def raw_confirm(message):
     """
