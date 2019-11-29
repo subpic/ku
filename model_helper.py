@@ -125,7 +125,7 @@ class ModelHelper(object):
                 else:
                     self.params.gen_class = DataGeneratorDisk
             else:
-                self.params.gen_class = DataGeneratorDataFrame
+                raise ValueError("Cannot infer generator class")
         
         self.set_model_name()
     
@@ -141,11 +141,15 @@ class ModelHelper(object):
             loss_str = loss2str(loss)
         else:
             loss_str = '[%s]' % ','.join(map(loss2str, list(loss.values())))
-                
+        
         i = '{}{}'.format(len(h.model.inputs),
                            format_size(h.gen_params.input_shape))
-        o = '{}{}'.format(len(h.model.outputs),
-                           format_size(h.model.outputs[0].shape[1:].as_list()))
+        
+        if h.model.outputs:
+            o = '{}{}'.format(len(h.model.outputs),
+                              format_size(h.model.outputs[0].shape[1:].as_list()))
+        else: o = ''
+        
         name = dict(i   = i,
                     o   = o,
                     l   = loss_str,
