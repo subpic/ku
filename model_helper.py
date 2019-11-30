@@ -64,16 +64,17 @@ class ModelHelper(object):
         write_graph    = False,              # TensorBoard params
         write_images   = False,              #
         histogram_freq = 0,                  #
-        logs_root      = '../logs/',         # TensorBoard logs
-        models_root    = '../models/',       # saved models path
-        features_root  = '../features/',     # saved features path (by `save_activations`)
+        logs_root      = 'logs/',            # TensorBoard logs
+        models_root    = 'models/',          # saved models path
+        features_root  = 'features/',        # saved features path (by `save_activations`)
         gen_class      = None                # generator class
                                              # inferred from self.gen_params.data_path
         """
         self.model = model
         self.ids = ids
         self.verbose = verbose
-        self.model_name = ShortNameBuilder(prefix=root_name+'/')
+        self.model_name = ShortNameBuilder(prefix=root_name+'/', 
+                                           sep=(':', '-'))
         self.model_cpu = None
 
         self.gen_params = Munch(shuffle       = True,  process_fn = False,
@@ -101,9 +102,9 @@ class ModelHelper(object):
                             write_images   = False,              #
                             histogram_freq = 0,                  #
 
-                            logs_root      = '../logs/',         # TensorBoard logs
-                            models_root    = '../models/',       # saved models path
-                            features_root  = '../features/',     # saved features path (by `save_activations`)
+                            logs_root      = 'logs/',         # TensorBoard logs
+                            models_root    = 'models/',       # saved models path
+                            features_root  = 'features/',     # saved features path (by `save_activations`)
                             gen_class      = None                # generator class
                                                                  # inferred from self.gen_params.data_path
                             )
@@ -158,7 +159,7 @@ class ModelHelper(object):
         self.model_name.update(name)
         return self.model_name
     
-    def _callbacks(self):
+    def callbacks(self):
         """Setup callbacks"""
         p = self.params
         log_dir = os.path.join(self.params.logs_root, self.model_name())
@@ -305,7 +306,7 @@ class ModelHelper(object):
                              validation_data   = valid_data, 
                              validation_steps  = valid_steps,
                              workers           = self.params.workers, 
-                             callbacks         = self._callbacks(),
+                             callbacks         = self.callbacks(),
                              max_queue_size    = self.params.max_queue_size,
                              class_weight      = self.params.class_weights,
                              use_multiprocessing = self.params.multiproc,
@@ -318,7 +319,7 @@ class ModelHelper(object):
             history = self.model.fit(X, y,
                              batch_size      = self.gen_params.batch_size,
                              epochs          = epochs,
-                             callbacks       = self._callbacks(),                
+                             callbacks       = self.callbacks(),                
                              validation_data = valid_data,
                              shuffle         = self.gen_params.shuffle,
                              class_weight    = self.params.class_weights,

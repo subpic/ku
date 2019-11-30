@@ -231,6 +231,7 @@ def srocc(xs, ys):
     xranks = pd.Series(xs).rank()    
     yranks = pd.Series(ys).rank()    
     return plcc(xranks, yranks)
+srcc = srocc
 
 def dist2mos(x, scale=np.arange(1, 6)):
     """
