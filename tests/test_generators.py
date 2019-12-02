@@ -2,6 +2,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 from ku import generators as gr
 from ku import generic as gen
+from ku import image_utils as iu
 from munch import Munch
 import pandas as pd, numpy as np
 import pytest
@@ -20,20 +21,25 @@ def test_correct_df_input():
     assert (np.all(ids.columns == ['filename', 'score']))
     assert (np.all(ids.score == range(1,5)))
 
-def test_init_generator():          
+def test_init_DataGeneratorDisk():          
     g = gr.DataGeneratorDisk(ids, **gen_params)
     assert isinstance(g[0], tuple)
     assert isinstance(g[0][0], list)
     assert isinstance(g[0][1], list)
     assert (gen.get_sizes(g[0]) == '([array<2,224,224,3>], [array<2,1>])')
     assert (np.all(g[0][1][0] == np.array([[1],[2]])))
+    
+def test_read_fn_DataGeneratorDisk():
+    read_fn = lambda p: iu.resize_image(iu.read_image(p), (100,100))
+    g = gr.DataGeneratorDisk(ids, read_fn=read_fn,
+                             **gen_params)
+    gen.get_sizes(g[0]) =='([array<2,100,100,3>], [array<2,1>])'
 
 def test_get_sizes():
     x = np.array([[1,2,3]])
     assert gen.get_sizes(([x.T],1,[4,5])) == '([array<3,1>], <1>, [<1>, <1>])'
     assert gen.get_sizes(np.array([[1,[1,2]]])) == 'array<1,2>'
 
-    
 def test_DataGeneratorDisk():        
     g = gr.DataGeneratorDisk(ids, **gen_params)
     
