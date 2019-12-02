@@ -328,7 +328,7 @@ def test_rating_model(helper, ids_test=None,
                                        they are assumed to be different augmentations
     :param remodel: change structure of the model when changing `output_layer`, or not
     :param show_plot: plot results vs ground-truth
-    :return: (y_true, y_pred, SRCC, PLCC, ACC)
+    :return: (y_true, y_pred, SRCC, PLCC)
     """
     print('Model outputs:', helper.model.output_names)
     if output_column is not None: 
@@ -363,7 +363,7 @@ def test_rating_model(helper, ids_test=None,
         y_pred = old_div(reduce(lambda x, y: (x+y), y_pred), len(y_pred))
 
     y_pred = np.squeeze(y_pred)
-        
+
     if y_pred.ndim == 2: 
         # for distributions
         print('Testing distributions')
