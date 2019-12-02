@@ -27,6 +27,8 @@ class DataGeneratorDisk(keras.utils.Sequence):
     batch_size (int):       how many images to read at a time
     shuffle (bool):         randomized reading order
     process_fn (function):  function applied to each image as it is read
+    read_fn (function):  function used to read data from a file (returns numpy.array)
+                         if None, image_utils.read_image() is used (default)
     deterministic (None, int):  random seed for shuffling order
     inputs (tuple of strings):  column names from `ids` containing image names
     inputs_df (strings tuple): column names from `ids`, returns values from the DataFrame itself
@@ -38,7 +40,8 @@ class DataGeneratorDisk(keras.utils.Sequence):
     def __init__(self, ids, data_path, **args):
         params_defa = Munch(ids           = ids,   data_path = data_path,
                             batch_size    = 32,    shuffle = True,
-                            input_shape   = (224, 224, 3), process_fn = None,
+                            input_shape   = (224, 224, 3), 
+                            process_fn    = None,  read_fn = None,
                             deterministic = None,  inputs=('image_name',),
                             inputs_df     = None,  outputs       = ('MOS',), 
                             verbose       = False, fixed_batches = False,
@@ -105,11 +108,14 @@ class DataGeneratorDisk(keras.utils.Sequence):
         for input_name in params.inputs:
             data = []
             # read the data from disk into a list
-            for i, row in enumerate(ids_batch.itertuples()):
-                fname = os.path.join(self.data_path,
-                                     row.__dict__[input_name])
-                im = read_image(fname)
-                data.append(im)
+            for i, row in ids_batch.iterrows():
+                file_name = row[input_name]
+                file_path = os.path.join(self.data_path, file_name)
+                if params.read_fn is None:                    
+                    file_data = read_image(file_path)
+                else:
+                    file_data = params.read_fn(file_path)
+                data.append(file_data)
 
             # if needed, process each image, and add to X_list (inputs list)
             if self.process_fn not in [None, False]:
