@@ -437,7 +437,7 @@ class ModelHelper(object):
             layer.trainable = True
 
     def load_model(self, model_name='', best=True, 
-                   from_weights=True, by_name=False):
+                   from_weights=True, by_name=False, verbose=1):
         """
         Load model from file.
 
@@ -452,15 +452,18 @@ class ModelHelper(object):
                           ('_weights' if from_weights else '') + '.h5')
         model_path = os.path.join(self.params.models_root, model_file_name)
         if not os.path.exists(model_path):
-            print('Model NOT loaded:', model_file_name, 'does not exist')
+            if verbose:
+                print('Model NOT loaded:', model_file_name, 'does not exist')
             return False
         else:
             if from_weights:
                 self.model.load_weights(model_path, by_name=by_name)
-                print('Model weights loaded:', model_file_name)
+                if verbose:
+                    print('Model weights loaded:', model_file_name)
             else:
                 self.model = load_model(model_path)
-                print('Model loaded:', model_file_name)
+                if verbose:
+                    print('Model loaded:', model_file_name)
             return True
 
     def save_model(self, weights_only=False, model=None, 
