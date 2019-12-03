@@ -5,12 +5,13 @@ from builtins import str
 from builtins import zip
 from builtins import range
 from builtins import object
-import os, sys, keras, numbers, glob, shutil
+import os, sys, numbers, glob, shutil
 import multiprocessing as mp, pandas as pd, numpy as np
 from pprint import pprint
 from munch import Munch
 from collections import OrderedDict
 
+import keras
 from keras.callbacks import TensorBoard, ModelCheckpoint, Callback, EarlyStopping
 from keras import optimizers
 from keras.models import Model, load_model
@@ -74,7 +75,7 @@ class ModelHelper(object):
         self.ids = ids
         self.verbose = verbose
         self.model_name = ShortNameBuilder(prefix=root_name+'/', 
-                                           sep=(':', '-'))
+                                           sep=(':', ' '))
         self.model_cpu = None
 
         self.gen_params = Munch(shuffle       = True,  process_fn = False,

@@ -2,13 +2,12 @@ from __future__ import print_function
 from __future__ import division
 from builtins import map
 from past.utils import old_div
-from keras import backend as K
-from keras.engine.topology import Layer
 import os
+
+from keras import backend as K
 tf = K.tf
 
 # Keras configuration directives
-
 def SetActiveGPU(number=0):
     """
     Set visibility of GPUs to the Tensorflow engine.

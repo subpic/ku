@@ -7,17 +7,17 @@ from builtins import range
 from past.utils import old_div
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+from functools import reduce
+
 import keras
 from keras.utils import plot_model
 from keras.layers import *
-
 from keras.applications.inception_v3 import InceptionV3
 from keras.applications.densenet import DenseNet201
 from keras.applications.resnet50 import ResNet50
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.applications.vgg16 import VGG16
 from keras.applications.nasnet import NASNetMobile
-from functools import reduce
 
 source_module = {
                  InceptionV3:       keras.applications.inception_v3,
@@ -466,28 +466,33 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
 
 
 # --------------------
-# Potentially OBSOLETE
+# To be OBSOLETED
 # --------------------
 
-# A bit overly specific w.r.t. the model architecture
-def get_model_imagenet(net_name, input_shape=None, plot=False, **kwargs):
-    """Get ImageNet models"""
-    print('Loading model', net_name if isinstance(net_name, str) else net_name.__name__)
+def get_model_imagenet(net_name, input_shape=None, 
+                       plot=False, **kwargs):
+    """Returns ImageNet models"""
+    
+    print('Loading model', net_name if isinstance(net_name, str)\
+                                    else net_name.__name__)
 
-    if net_name == ResNet50:
+    if net_name == ResNet50 or net_name == 'ResNet50':
         base_model = ResNet50(weights='imagenet', include_top=False,
                               input_shape=input_shape, **kwargs)
         feats = base_model.layers[-2]
-    elif net_name == NASNetMobile:
+        
+    elif net_name == NASNetMobile or net_name == 'NASNetMobile':
         base_model = NASNetMobile(weights='imagenet',
                                   include_top=True,
                                   input_shape=input_shape, **kwargs)
         feats = base_model.layers[-3]
+        
     elif net_name in list(source_module.keys()):
         base_model = net_name(weights='imagenet', include_top=False,
                               input_shape=input_shape, **kwargs)
         feats = base_model.layers[-1]
-    else:
+        
+    else:        
         raise Exception('Unknown model ' + net_name.__name__)
 
     gap = GlobalAveragePooling2D(name="final_gap")(feats.output)
