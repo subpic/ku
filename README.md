@@ -17,12 +17,10 @@ Some of the key components of each file:
 **`image_utils.py`**:
 
 * `ImageAugmenter`: Create custom image augmentation functions for training Keras models.
-* `read_image`, `read_image_batch`: utility functions for manipulating images.
 
 **`generic.py`**:
 
 * `H5Helper`: Manage named data sets in HDF5 files, for us in Keras generators.
-* `pretty`: Pretty-print dictionary type objects.
 * `ShortNameBuilder`: Utility for building short (file) names that contain multiple parameters.
 
 **`applications.py`**:
