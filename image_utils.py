@@ -14,10 +14,10 @@ from numpy import interp
 from numpy.random import rand
 import PIL
 from PIL import Image
-from keras.preprocessing.image import img_to_array, array_to_img, load_img
 import matplotlib.pyplot as plt
-
 from .generic import *
+
+from keras.preprocessing.image import img_to_array, array_to_img, load_img
 
 def view_stack(ims, figsize=(20, 20), figshape=None, 
                cmap='gray', vrange='all', **kwargs):

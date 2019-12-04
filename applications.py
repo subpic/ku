@@ -8,6 +8,7 @@ from past.utils import old_div
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from functools import reduce
+from .model_helper import *
 
 import keras
 from keras.utils import plot_model
@@ -27,8 +28,6 @@ source_module = {
                  VGG16:             keras.applications.vgg16,
                  NASNetMobile:      keras.applications.nasnet
                 }
-
-from .model_helper import *
 
 # correspondences between CNN model name and pre-processing function
 process_input = {

@@ -3,10 +3,10 @@ from __future__ import absolute_import
 from . import generic, tensor_ops, image_utils
 from . import generators, model_helper, applications
     
-from keras import backend as K
-if K.backend()=='tensorflow': 
-    K.set_image_dim_ordering("tf")
-K.tf.compat.v1.logging.set_verbosity(K.tf.compat.v1.logging.ERROR)
+# from tensorflow.keras import backend as K
+# K.tf.compat.v1.logging.set_verbosity(K.tf.compat.v1.logging.ERROR)
+# if K.backend()=='tensorflow': 
+#     K.set_image_dim_ordering("tf")
 
 # remove tensorflow warning
 import logging
