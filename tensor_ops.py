@@ -3,9 +3,7 @@ from __future__ import division
 from builtins import map
 from past.utils import old_div
 import os
-
 from keras import backend as K
-tf = K.tf
 
 # Keras configuration directives
 def SetActiveGPU(number=0):
@@ -26,7 +24,7 @@ def GPUMemoryCap(fraction=1):
 
     :param fraction: in [0, 1], 1 = the entire available GPU memory.
     """
-    config = tf.ConfigProto()
+    config = K.tf.ConfigProto()
     config.gpu_options.per_process_gpu_memory_fraction = fraction
     K.set_session(K.tf.Session(config=config))
 
