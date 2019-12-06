@@ -378,6 +378,7 @@ def test_rating_model(helper, ids_test=None,
         else:
             output = output_column
         y_test = np.array(ids_test.loc[:,output])
+        y_test = y_test.flatten()
 
     # in case the last batch was not used, and dataset size
     # is not a multiple of batch_size
