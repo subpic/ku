@@ -38,14 +38,14 @@ class ModelHelper(object):
     def __init__(self, model, root_name, ids, 
                  gen_params={}, verbose=False, **params):
         """
-        :param model: Keras model, compilation will be done at runtime.
-        :param root_name: base name of the model, extended with
-                          configuration parameters when saved
-        :param ids: DataFrame table, used by generators
-        :param gen_params: dict for parameters for the generator
-                           defaults (shuffle = True, process_fn = False,
-                                     deterministic = False, verbose = False)
-        :param verbose: verbosity
+        * model:      Keras model, compilation will be done at runtime.
+        * root_name:  base name of the model, extended with
+                      configuration parameters when saved
+        * ids:        DataFrame table, used by generators
+        * gen_params: dict for parameters for the generator
+                      defaults (shuffle = True, process_fn = False,
+                                deterministic = False, verbose = False)
+        * verbose:    verbosity
 
         OTHER PARAMS
         lr   = 1e-4,               # learning rate
@@ -202,8 +202,9 @@ class ModelHelper(object):
         """
         Create a generator of `self.params.gen_class` using new `ids`.
 
-        :param ids: DataFrame table
-        :param kwargs: updated parameters of the generator
+        * ids:    DataFrame table
+        * subset: select a subset of rows based on the `set` columns
+        * kwargs: updated parameters of the generator
         :return: Sequence (generator)
         """
         params = self._updated_gen_params(**kwargs)
@@ -218,7 +219,7 @@ class ModelHelper(object):
         Basic utility to run the generator for one or more data instances in `ids`.
         Useful for testing the default generator functionality.
 
-        :param input_idx: scalar or 2-tuple of indices
+        * input_idx: scalar or 2-tuple of indices
         :return: (generated_batch, generator_instance)
         """
         if not isinstance(input_idx, (list, tuple)):
@@ -236,7 +237,7 @@ class ModelHelper(object):
         Enable multi-GPU processing.
         Creates a copy of the CPU model and calls `multi_gpu_model`.
 
-        :param gpus: number of GPUs to use, defaults to all.
+        * gpus: number of GPUs to use, defaults to all.
         """
         self.model_cpu = self.model
         self.model = multi_gpu_model(self.model, gpus=gpus)        
@@ -254,11 +255,11 @@ class ModelHelper(object):
         Run training iterations on existing model.
         Initializes `train_gen` and `valid_gen` if not defined.
 
-        :param train_gen: train generator
-        :param valid_gen: validation generator
-        :param lr:        learning rate
-        :param epochs:    number of epochs
-        :return:          training history from self.model.fit_generator()
+        * train_gen: train generator
+        * valid_gen: validation generator
+        * lr:        learning rate
+        * epochs:    number of epochs
+        :return:     training history from self.model.fit_generator()
         """
         ids = self.ids
         print('Training model:', self.model_name())
@@ -363,12 +364,12 @@ class ModelHelper(object):
         """
         Predict on `test_gen`.
 
-        :param test_gen: generator used for prediction
-        :param output_layer: layer at which activations are computed (defaults to output)
-        :param repeats: how many times the prediction is repeated (with different augmentation)
-        :param batch_size: size of each batch
-        :param remodel: if true: change model such that new output is `output_layer`
-        :return: if repeats == 1, np.ndarray, otherwise a list of np.ndarray
+        * test_gen:     generator used for prediction
+        * output_layer: layer at which activations are computed (defaults to output)
+        * repeats:      how many times the prediction is repeated (with different augmentation)
+        * batch_size:   size of each batch
+        * remodel:      if `true` then change model such that new output is `output_layer`
+        :return:        if `repeats` == 1 then `np.ndarray` else `list[np.ndarray]`
         """
         if not test_gen:
             params_test = self._updated_gen_params(shuffle=False, 
@@ -442,11 +443,11 @@ class ModelHelper(object):
         """
         Load model from file.
 
-        :param model_name: new model name, otherwise self.model_name()
-        :param best: load the best model, or otherwise final model
-        :param from_weights: from weights, or from full saved model
-        :param by_name: load layers by name
-        :return: true if model was loaded successfully, otherwise false
+        * model_name:   new model name, otherwise self.model_name()
+        * best:         load the best model, or otherwise final model
+        * from_weights: from weights, or from full saved model
+        * by_name:      load layers by name
+        :return:        true if model was loaded successfully, otherwise false
         """
         model_name = model_name or self.model_name()
         model_file_name = (model_name + ('_best' if best else '_final') + 
@@ -472,12 +473,12 @@ class ModelHelper(object):
         """
         Save model to HDF5 file.
 
-        :param weights_only: save only weights,
-                             or full model otherwise
-        :param model: specify a particular model instance,
-                      otherwise self.model is saved
-        :param name_extras: append this to model_name
-        :param best: save as best model, otherwise final model
+        * weights_only: save only weights,
+                        or full model otherwise
+        * model:        specify a particular model instance,
+                        otherwise self.model is saved
+        * name_extras:  append this to model_name
+        * best:         save as best model, otherwise final model
         """
         model = model or self.model
         if verbose:
@@ -502,14 +503,15 @@ class ModelHelper(object):
         """
         Save activations from a particular `output_layer` to an HDF5 file.
 
-        :param output_layer: if not None, layer name, otherwise use the model output
-        :param file_path:    HDF5 file path
-        :param ids:          data entries to compute the activations for, defaults to `self.ids`
-        :param groups:       a number denoting the number of augmentation repetitions, or list of group names
-        :param verbose:      verbosity
-        :param over_write:   overwrite HDF5 file
-        :param name_suffix:  append suffix to name of file (before ext)
-        :param save_as_type: save as a different data type, defaults to np.float32
+        * output_layer:   if not None, layer name, otherwise use the model output
+        * file_path:      HDF5 file path
+        * ids:            data entries to compute the activations for, defaults to `self.ids`
+        * groups:         a number denoting the number of augmentation repetitions, or list of group names
+        * verbose:        verbosity
+        * over_write:     overwrite HDF5 file
+        * name_suffix:    append suffix to name of file (before ext)
+        * save_as_type:   save as a different data type, defaults to np.float32
+        * postprocess_fn: post-processing function to apply to the activations
         """
         if ids is None:
             ids = self.ids
@@ -522,10 +524,10 @@ class ModelHelper(object):
 
         if file_path is None:         
             short_name = self.model_name.subset(['i', 'o'])
-            short_name(r = groups_count,
-                       l = (output_layer or 'final'))
+            short_name(grp = groups_count,
+                       lay = (output_layer or 'final'))
             if name_suffix:
-                name_suffix = '_'+name_suffix
+                name_suffix = '_' + name_suffix
             file_path = os.path.join(self.params.features_root, 
                                      str(short_name) + name_suffix + '.h5')
             make_dirs(file_path)
@@ -540,9 +542,8 @@ class ModelHelper(object):
         data_gen = self.make_generator(ids, **params)
 
         for group_name in groups_list:
-            activ = self.predict(data_gen, 
-                                 output_layer = output_layer).\
-                                                astype(save_as_type)
+            activ = self.predict(data_gen, output_layer=output_layer)
+            activ = activ.astype(save_as_type)
             if len(activ.shape)==1:
                 activ = np.expand_dims(activ, 0)
             
