@@ -23,20 +23,20 @@ class DataGeneratorDisk(keras.utils.Sequence):
     - on __getitem__() returns an ND-array containing `batch_size` images
 
     ARGUMENTS
-    ids (pandas.dataframe): table containing image names, and output variables
-    data_path  (string):    path of image folder
-    batch_size (int):       how many images to read at a time
-    shuffle (bool):         randomized reading order
-    process_fn (function):  function applied to each image as it is read
-    read_fn (function):  function used to read data from a file (returns numpy.array)
-                         if None, image_utils.read_image() is used (default)
-    deterministic (None, int):  random seed for shuffling order
-    inputs (tuple of strings):  column names from `ids` containing image names
-    inputs_df (strings tuple): column names from `ids`, returns values from the DataFrame itself
-    outputs (tuple of strings): column names from `ids`
-    verbose (bool):             logging verbosity
-    fixed_batches (bool):       only return full batches, ignore the last incomplete batch if needed
-    process_args (None, dict):  dictionary of arguments to pass to `process_fn`
+    * ids (pandas.dataframe): table containing image names, and output variables
+    * data_path  (string):    path of image folder
+    * batch_size (int):       how many images to read at a time
+    * shuffle (bool):         randomized reading order
+    * process_fn (function):  function applied to each image as it is read
+    * read_fn (function):  function used to read data from a file (returns numpy.array)
+                           if None, image_utils.read_image() is used (default)
+    * deterministic (None, int):  random seed for shuffling order
+    * inputs (tuple of strings):  column names from `ids` containing image names
+    * inputs_df (strings tuple):  column names from `ids`, returns values from the DataFrame itself
+    * outputs (tuple of strings): column names from `ids`
+    * verbose (bool):             logging verbosity
+    * fixed_batches (bool):       only return full batches, ignore the last incomplete batch if needed
+    * process_args (None, dict):  dictionary of arguments to pass to `process_fn`
     """
     def __init__(self, ids, data_path, **args):
         params_defa = Munch(ids           = ids,   data_path = data_path,
@@ -152,22 +152,22 @@ class DataGeneratorHDF5(DataGeneratorDisk):
     - on __getitem__() returns an ND-array containing `batch_size` data instances
 
     ARGUMENTS
-    ids (pandas.dataframe): table containing data instance names, and output variables
-    data_path  (string):    path of HDF5 file
-    batch_size (int):       how many instances to read at a time
-    shuffle (bool):         randomized reading order
-    process_fn (function):  function applied to each data instance as it is read
-    deterministic (None, int): random seed for shuffling order
-    inputs (strings tuple):    column names from `ids` containing data instance names, read from `data_path`
-    inputs_df (strings tuple): column names from `ids`, returns values from the DataFrame itself
-    outputs (strings tuple):   column names from `ids`, returns values from the DataFrame itself
-    verbose (bool):            logging verbosity
-    fixed_batches (bool):      only return full batches, ignore the last incomplete batch if needed
-    process_args (dict):       dictionary of arguments to pass to `process_fn`
-    group_names (strings tuple): read only from specified groups, or from any if `group_names` is None
-                                 `group_names` are randomly sampled from meta-groups
-                                 i.e. when group_names = [[group_names_1], [group_names_2]]
-    random_group (bool):         read inputs from a random group for every data instance
+    * ids (pandas.dataframe):    table containing data instance names, and output variables
+    * data_path  (string):       path of HDF5 file
+    * batch_size (int):          how many instances to read at a time
+    * shuffle (bool):            randomized reading order
+    * process_fn (function):     function applied to each data instance as it is read
+    * deterministic (None, int): random seed for shuffling order
+    * inputs (strings tuple):    column names from `ids` containing data instance names, read from `data_path`
+    * inputs_df (strings tuple): column names from `ids`, returns values from the DataFrame itself
+    * outputs (strings tuple):   column names from `ids`, returns values from the DataFrame itself
+    * verbose (bool):            logging verbosity
+    * fixed_batches (bool):      only return full batches, ignore the last incomplete batch if needed
+    * process_args (dict):       dictionary of arguments to pass to `process_fn`
+    * group_names (strings tuple): read only from specified groups, or from any if `group_names` is None
+                                   `group_names` are randomly sampled from meta-groups
+                                   i.e. when group_names = [[group_names_1], [group_names_2]]
+    * random_group (bool): read inputs from a random group for every data instance
     """
     def __init__(self, ids, data_path, **args):
         params_defa = Munch(ids         = ids,   data_path     = data_path, deterministic = False,

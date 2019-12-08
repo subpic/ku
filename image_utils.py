@@ -24,17 +24,17 @@ def view_stack(ims, figsize=(20, 20), figshape=None,
     """
     Display a stack or list of images using subplots.
 
-    :param ims: single np.ndarray of size [N x H x W x 3/1] or 
-                list of np.ndarray(s) of size [H x W x 3/1]
-                (if list, np.stack is called first)
-    :param figsize: plt.figure(figsize=figsize)
-    :param figshape: (rows, cols) of the figure
-                     if None, the sizes are inferred
-    :param cmap: color map, defaults to 'gray'
-    :param vrange: remap displayed value range:
-                   if 'all' set a global display range for the entire stack,
-                   if 'each' use a different display range for each image
-    :param kwargs: passed to `imshow` for each image
+    * ims: single np.ndarray of size [N x H x W x 3/1] or 
+           list of np.ndarray(s) of size [H x W x 3/1]
+           (if list, np.stack is called first)
+    * figsize: plt.figure(figsize=figsize)
+    * figshape: (rows, cols) of the figure
+                if None, the sizes are inferred
+    * cmap:   color map, defaults to 'gray'
+    * vrange: remap displayed value range:
+              if 'all' set a global display range for the entire stack,
+              if 'each' use a different display range for each image
+    * kwargs: passed to `imshow` for each image
     """
     # get number of images
     if isinstance(ims, list): n = len(ims)
@@ -69,9 +69,9 @@ def read_image(image_path, image_size=1):
     """
     Read image from disk
 
-    :param image_path: full path to the image
-    :param image_size: resize image to specified size
-                       can be a 2-tuple of (H, W) or a scalar zoom factor
+    * image_path: full path to the image
+    * image_size: resize image to specified size
+                  can be a 2-tuple of (H, W) or a scalar zoom factor
     :return: np.ndarray
     """
     if type(image_size) == tuple:
@@ -89,10 +89,10 @@ def read_image_batch(image_paths, image_size=None, as_list=False):
     """
     Reads image array of np.uint8 and shape (num_images, *image_shape)
 
-    :param image_paths: list of image paths
-    :param image_size: if not None, image is resized
-    :param as_list: if True, return list of images, 
-                    else return np.ndarray (default)
+    * image_paths: list of image paths
+    * image_size: if not None, image is resized
+    * as_list: if True, return list of images, 
+               else return np.ndarray (default)
     :return: np.ndarray or list
     """
     images = None
@@ -115,9 +115,9 @@ def extract_random_patch(im, patch_size=(224, 224), border=(0, 0)):
     Extract a random image patch of size `patch_size`,
     with the center of the patch inside `border`
 
-    :param im: np.ndarray of size H x W x C
-    :param patch_size: 2-tuple of patch H x W
-    :param border: 2-tuple of border H x W
+    * im: np.ndarray of size H x W x C
+    * patch_size: 2-tuple of patch H x W
+    * border: 2-tuple of border H x W
     :return: np.ndarray
     """
     H, W, _ = im.shape
@@ -143,10 +143,10 @@ def extract_patch(im, patch_size=(224, 224),
     Extract a patch of size `patch_size`,
     with its center at `patch_position` expressed as a ratio of the image's H and W
 
-    :param im: np.ndarray of size H x W x C
-    :param patch_size: 2-tuple of patch H x W
-    :param patch_position: 2-tuple containing patch location
-                           (0,0) = upper left corner, (1,1) = lower right corner
+    * im: np.ndarray of size H x W x C
+    * patch_size: 2-tuple of patch H x W
+    * patch_position: 2-tuple containing patch location
+                      (0,0) = upper left corner, (1,1) = lower right corner
     :return: np.ndarray
     """
     Py, Px         = patch_position
@@ -168,8 +168,8 @@ def resize_image(x, size):
     """
     Resize image using skimage.transform.resize even when range is outside [-1,1].
 
-    :param x: np.ndarray
-    :param size: new size (H,W)
+    * x: np.ndarray
+    * size: new size (H,W)
     :return: np.ndarray
     """
     if size != x.shape[:2]:
@@ -186,12 +186,12 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
     """
     Resize an image folder, copying the resized images to a new destination folder.
 
-    :param path_src: source folder path
-    :param path_dst: destination folder path, created if does not exist
-    :param image_size_dst: optionally resize the images
-    :param over_write: enable to over-write destination images
-    :param format_dst: format type, defaults to 'jpg'
-    :return: list of file names that triggered an error during read/resize/write
+    * path_src:       source folder path
+    * path_dst:       destination folder path, created if does not exist
+    * image_size_dst: optionally resize the images
+    * over_write:     enable to over-write destination images
+    * format_dst:     format type, defaults to 'jpg'
+    :return:          list of file names that triggered an error during read/resize/write
     """
     
     image_types = ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')
@@ -246,10 +246,10 @@ def check_images(image_dir, image_types =\
     """
     Check which images from `image_dir` fail to read.
 
-    :param image_dir: the image directory
-    :param image_types: match patterns for image file extensions, defaults:
-                        ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')
-    :return: tuple of (list of failed image names, list of all image names)
+    * image_dir:   the image directory
+    * image_types: match patterns for image file extensions, defaults:
+                   ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')
+    :return:       tuple of (list of failed image names, list of all image names)
     """    
     # index all `image_types` in source path
     file_list = []
@@ -278,11 +278,11 @@ def save_images_to_h5(image_path, h5_path, over_write=False,
     """
     Save a folder of JPEGs to an HDF5 file. Uses `read_image_batch` and `H5Helper`.
 
-    :param image_path: path to the source image folder
-    :param h5_path: path to the destination HDF5 file; created if does not exist
-    :param over_write: true/false
-    :param batch_size: number of images to read at a time
-    :param image_size_dst: new size of images, if not None
+    * image_path: path to the source image folder
+    * h5_path:    path to the destination HDF5 file; created if does not exist
+    * over_write: true/false
+    * batch_size: number of images to read at a time
+    * image_size_dst: new size of images, if not None
     """
 
     file_list = glob.glob(os.path.join(image_path, '*.jpg'))
@@ -346,10 +346,10 @@ class ImageAugmenter(object):
     """
     def __init__(self, image, remap=True, verbose=False):
         """
-        :param image: image to be transformed, np.ndarray
-        :param remap: remap values to [0,1] for easier to apply transformations
-                    these are mapped back to the initial range when .result is called
-        :param verbose: enable verbose prints
+        * image: image to be transformed, np.ndarray
+        * remap: remap values to [0,1] for easier to apply transformations
+                 these are mapped back to the initial range when .result is called
+        * verbose: enable verbose prints
         """
         self._rotation_angle = 0
         self._original_range = minmax(image)
@@ -361,9 +361,9 @@ class ImageAugmenter(object):
         """
         Rotate self.image
 
-        :param angle: if `random` then rotation angle is a random value between [-`angle`, `angle`]
-                      otherwise rotation angle is `angle`
-        :param random: random or by a fixed amount
+        * angle: if `random` then rotation angle is a random value between [-`angle`, `angle`]
+                 otherwise rotation angle is `angle`
+        * random: random or by a fixed amount
         :return: self
         """
         if angle != 0 and random:
@@ -382,10 +382,10 @@ class ImageAugmenter(object):
         """
         Crop a patch out of self.image
 
-        :param crop_size: dimensions of the crop
-        :param crop_pos: if None, then a random crop is taken, otherwise the given `crop_pos` position is used
-        :param clip_rotation: clip a border around the image, such that the edge resulting from
-                              having rotated the image is not visible
+        * crop_size: dimensions of the crop
+        * crop_pos: if None, then a random crop is taken, otherwise the given `crop_pos` position is used
+        * clip_rotation: clip a border around the image, such that the edge resulting from
+                         having rotated the image is not visible
         :return: self
         """
         # equally crop in both dimensions if only one number is provided
@@ -422,7 +422,7 @@ class ImageAugmenter(object):
         """
         Flip left-right self.image
 
-        :param do: if None, random flip, otherwise flip if do=True
+        * do: if None, random flip, otherwise flip if do=True
         :return: self
         """
         if (do is None and rand(1) > 0.5) or do:
@@ -434,13 +434,13 @@ class ImageAugmenter(object):
         """
         Rescale self.image proportionally
 
-        :param target: (int) target resolution relative to the reference image resolution
-                       taken to be either the height if `min_dim` else min(height, width)
-                       (float) zoom level
-        :param proportion: modulating factor for the zoom
-                           when proportion=1 target zoom is unchanged
-                           when proportion=0 target zoom=1 (original size)
-        :param min_dim: bool
+        * target: (int) target resolution relative to the reference image resolution
+                  taken to be either the height if `min_dim` else min(height, width)
+                  (float) zoom level
+        * proportion: modulating factor for the zoom
+                      when proportion=1 target zoom is unchanged
+                      when proportion=0 target zoom=1 (original size)
+        * min_dim: bool
         :return: self
         """
         if isinstance(target, int): # target dimensions
@@ -465,9 +465,9 @@ class ImageAugmenter(object):
         """
         Resize image to target dimensions
 
-        :param size: tuple of (height, width)
-        :param ensure_min: if true, `size` is the minimum size allowed
-                           a dimension is not changed unless it is below the minimum size
+        * size: tuple of (height, width)
+        * ensure_min: if true, `size` is the minimum size allowed
+                      a dimension is not changed unless it is below the minimum size
         :return: self
         """
         imsz = self.image.shape[:2]

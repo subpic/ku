@@ -10,8 +10,8 @@ def SetActiveGPU(number=0):
     """
     Set visibility of GPUs to the Tensorflow engine.
 
-    :param number: scalar or list of GPU indices
-                   e.g. 0 for the 1st GPU, or [0,2] for the 1st and 3rd GPU
+    * number: scalar or list of GPU indices
+              e.g. 0 for the 1st GPU, or [0,2] for the 1st and 3rd GPU
     """
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     if not isinstance(number,list): number=[number]
@@ -22,7 +22,7 @@ def GPUMemoryCap(fraction=1):
     """
     Limit the amount of GPU memory that can be used by an active kernel.
 
-    :param fraction: in [0, 1], 1 = the entire available GPU memory.
+    * fraction: in [0, 1], 1 = the entire available GPU memory.
     """
     config = K.tf.ConfigProto()
     config.gpu_options.per_process_gpu_memory_fraction = fraction
@@ -65,7 +65,7 @@ def get_plcc_dist_tf(scores_array=[1., 2, 3, 4, 5]):
     Computes the PLCC between the MOS values computed
     from pairs of distributions of scores. Used as a metric.
 
-    :param scores_array: scale values
+    * scores_array: scale values
     """
     def plcc_dist_tf(x, y):
         scores = K.constant(scores_array)

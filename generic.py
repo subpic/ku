@@ -28,12 +28,12 @@ class H5Helper(object):
                  memory_mapped=False, over_write=False, 
                  backing_store=False, verbose=False):
         """
-        :param file_name: HDF5 file path
-        :param file_mode: one of 'a','w','r','w+','r+'
-        :param memory_mapped: enables memory mapped backing store
-        :param over_write: over-write existing file
-        :param backing_store: use another backing store
-        :param verbose: verbosity
+        * file_name: HDF5 file path
+        * file_mode: one of 'a','w','r','w+','r+'
+        * memory_mapped: enables memory mapped backing store
+        * over_write: over-write existing file
+        * backing_store: use another backing store
+        * verbose: verbosity
         """
         self.hf = None
         self.file_name = file_name
@@ -64,10 +64,10 @@ class H5Helper(object):
         Write `data` to HDF5 file, using `dataset_names` for datasets,
         and optionally `group_names` for groups.
 
-        :param data: if `group_names` is None: np.ndarray of N data instances of size N x [...]
-                     else list of np.ndarray of N data instances of size N x [...] each
-        :param dataset_names: list of strings
-        :param group_names: None, or list of strings
+        * data:          if `group_names` is None: np.ndarray of N data instances of size N x [...]
+                         else list of np.ndarray of N data instances of size N x [...] each
+        * dataset_names: list of strings
+        * group_names:   None, or list of strings
         """
         with self._lock:            
             assert isinstance(dataset_names, (list, pd.core.series.Series)), "`dataset_names` is of type {} and should be `list` or `pandas.core.series.Series`".format(type(dataset_names))
@@ -104,9 +104,9 @@ class H5Helper(object):
         """
         Read `dataset_names` from HDF5 file, optionally using `group_names`.
 
-        :param dataset_names: list of strings
-        :param group_names: None, or list of strings
-        :return: np.ndarray
+        * dataset_names: list of strings
+        * group_names:   None, or list of strings
+        :return:         np.ndarray
         """
         with self._lock:
             hf = self.hf
@@ -122,7 +122,7 @@ class H5Helper(object):
         Reads `dataset_names` each one from a random group.
         At least one group must exist.
 
-        :param dataset_names: list of strings
+        * dataset_names: list of strings
         :return: np.ndarray
         """
         with self._lock:
@@ -137,7 +137,7 @@ class H5Helper(object):
         Prints a summary of the contents of the HDF5 file.
         Lists all groups and first `print_limit` datasets for each group.
 
-        :param print_limit: number of datasets to list per group.
+        * print_limit: number of datasets to list per group.
         """
         hf = self.hf
         keys = list(hf.keys())
@@ -198,7 +198,7 @@ def minmax(x):
     """
     Range of x.
 
-    :param x: list or np.ndarray
+    * x: list or np.ndarray
     :return: (min, max)
     """
     if not isinstance(x, np.ndarray):
@@ -209,8 +209,8 @@ def mapmm(x, new_range = (0, 1)):
     """
     Remap values in `x` to `new_range`.
 
-    :param x: np.ndarray
-    :param new_range: (min, max)
+    * x: np.ndarray
+    * new_range: (min, max)
     :return: np.ndarray with values mapped to [new_range[0], new_range[1]]
     """
     mina, maxa = new_range
@@ -259,7 +259,7 @@ def force_list(x):
 def make_dirs(filename):
     """
     Create directory structure described by `filename`.
-    :param filename: a valid system path
+    * filename: a valid system path
     """
     if not os.path.exists(os.path.dirname(filename)):
         try:
@@ -270,9 +270,9 @@ def updated_dict(d, only_existing=True, **updates):
     """
     Update dictionary `d` with `updates`, optionally changing `only_existing` keys.
 
-    :param d: dict
-    :param only_existing: do not add new keys, update existing ones only
-    :param updates: dict
+    * d: dict
+    * only_existing: do not add new keys, update existing ones only
+    * updates: dict
     :return: updated dictionary
     """
     d = d.copy()
@@ -293,10 +293,10 @@ def pretty_print(d, indent=0, key_sep=':', trim=True):
     """
     Pretty print dictionary, recursively.
 
-    :param d: dict
-    :param indent: indentation amount
-    :param key_sep: separator printed between key and values
-    :param trim: remove redundant white space from printed values
+    * d: dict
+    * indent: indentation amount
+    * key_sep: separator printed between key and values
+    * trim: remove redundant white space from printed values
     """
     if indent == 0 and not isinstance(d, dict):
         d = d.__dict__
@@ -359,8 +359,8 @@ class ShortNameBuilder(Munch):
 def check_keys_exist(new, old):
     """
     Check that keys in `new` dict existing in `old` dict.
-    :param new: dict
-    :param old: dict
+    * new: dict
+    * old: dict
     :return: exception if `new` keys don't existing in `old` ones
 
     Utility function used internally.
@@ -392,7 +392,8 @@ def print_sizes(x, array_marker=''):
 def raw_confirm(message):
     """
     Ask for confirmation.
-    :param message: message to show
+    
+    * message: message to show
     :return: true if confirmation given, false otherwise
     """
     confirmation = input(message + " (y/[n])")
@@ -405,8 +406,8 @@ def update_config(obj, **kwargs):
     """
     Update configuration of Keras `obj` e.g. layer, model.
 
-    :param obj: object that has .get_config() and .from_config() methods.
-    :param kwargs: dict of updates
+    * obj: object that has .get_config() and .from_config() methods.
+    * kwargs: dict of updates
     :return: updated object
     """
     cfg = obj.get_config()

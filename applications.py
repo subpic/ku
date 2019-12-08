@@ -57,15 +57,15 @@ def fc_layers(input_layer,
 
     e.g. default would look like dense(2048) > dropout
 
-    :param input_layer: input layer to the chain
-    :param name: prefix to each layer in the chain
-    :param fc_sizes: list of number of neurons in each fc-layer
-    :param dropout_rates: list of dropout rates for each fc-layer
-    :param batch_norm: 0 (False) = no batch normalization (BN),
-                       1 = do BN for all, 2 = do for all except the last
-    :param l2_norm_inputs: normalize the `input_layer` with L2_norm
-    :param kernel_regularizer: optional regularizer for each fc-layer
-    :param out_activation: activation added to the last fc-layer
+    * input_layer: input layer to the chain
+    * name: prefix to each layer in the chain
+    * fc_sizes: list of number of neurons in each fc-layer
+    * dropout_rates: list of dropout rates for each fc-layer
+    * batch_norm: 0 (False) = no batch normalization (BN),
+                  1 = do BN for all, 2 = do for all except the last
+    * l2_norm_inputs: normalize the `input_layer` with L2_norm
+    * kernel_regularizer: optional regularizer for each fc-layer
+    * out_activation: activation added to the last fc-layer
     :return: output layer of the chain
     """
     x = input_layer
@@ -106,18 +106,17 @@ def conv2d_bn(x, filters, num_row, num_col, padding='same',
               strides=(1, 1), name=None):
     """
     Utility function to apply conv + BN.
-    # Arguments
-        x: input tensor.
-        filters: filters in `Conv2D`.
-        num_row: height of the convolution kernel.
-        num_col: width of the convolution kernel.
-        padding: padding mode in `Conv2D`.
-        strides: strides in `Conv2D`.
-        name: name of the ops; will become `name + '_conv'`
-            for the convolution and `name + '_bn'` for the
-            batch norm layer.
-    # Returns
-        Output tensor after applying `Conv2D` and `BatchNormalization`.
+    
+    * x:       input tensor.
+    * filters: filters in `Conv2D`.
+    * num_row: height of the convolution kernel.
+    * num_col: width of the convolution kernel.
+    * padding: padding mode in `Conv2D`.
+    * strides: strides in `Conv2D`.
+    * name:    name of the ops; will become `name + '_conv'`
+               for the convolution and `name + '_bn'` for the
+               batch norm layer.
+    :return:   output tensor after applying `Conv2D` and `BatchNormalization`.
 
     Source: InceptionV3 Keras code
     """
@@ -169,10 +168,10 @@ def model_inception_multigap(input_shape=(224, 224, 3), return_sizes=False,
     Build InceptionV3 multi-GAP model, that extracts narrow MLSP features.
     Relies on `get_inception_gaps`.
 
-    :param input_shape: shape of the input images
-    :param return_sizes: return the sizes of each layer: (model, gap_sizes)
-    :param indexes: indices to use from the usual GAPs
-    :param name: name of the model
+    * input_shape: shape of the input images
+    * return_sizes: return the sizes of each layer: (model, gap_sizes)
+    * indexes: indices to use from the usual GAPs
+    * name: name of the model
     :return: model or (model, gap_sizes)
     """
     print('Loading InceptionV3 multi-gap with input_shape:', input_shape)
@@ -207,8 +206,8 @@ def model_inceptionresnet_multigap(input_shape=(224, 224, 3),
     """
     Build InceptionResNetV2 multi-GAP model, that extracts narrow MLSP features.
 
-    :param input_shape: shape of the input images
-    :param return_sizes: return the sizes of each layer: (model, gap_sizes)
+    * input_shape: shape of the input images
+    * return_sizes: return the sizes of each layer: (model, gap_sizes)
     :return: model or (model, gap_sizes)
     """
     print('Loading InceptionResNetV2 multi-gap with input_shape:', input_shape)
@@ -237,11 +236,11 @@ def model_inception_pooled(input_shape=(None, None, 3), indexes=list(range(11)),
     Returns the wide MLSP features, spatially pooled, from InceptionV3.
     Similar to `model_inception_multigap`.
 
-    :param input_shape: shape of the input images
-    :param indexes: indices to use from the usual GAPs
-    :param pool_size: spatial extend of the MLSP features
-    :param name: name of the model
-    :param return_sizes: return the sizes of each layer: (model, pool_sizes)
+    * input_shape: shape of the input images
+    * indexes: indices to use from the usual GAPs
+    * pool_size: spatial extend of the MLSP features
+    * name: name of the model
+    * return_sizes: return the sizes of each layer: (model, pool_sizes)
     :return: model or (model, pool_sizes)
     """
     print('Loading InceptionV3 multi-pooled with input_shape:', input_shape)
@@ -272,10 +271,10 @@ def model_inceptionresnet_pooled(input_shape=(None, None, 3), pool_size=(5, 5),
     """
     Returns the wide MLSP features, spatially pooled, from InceptionResNetV2.
 
-    :param input_shape: shape of the input images
-    :param pool_size: spatial extend of the MLSP features
-    :param name: name of the model
-    :param return_sizes: return the sizes of each layer: (model, pool_sizes)
+    * input_shape: shape of the input images
+    * pool_size: spatial extend of the MLSP features
+    * name: name of the model
+    * return_sizes: return the sizes of each layer: (model, pool_sizes)
     :return: model or (model, pool_sizes)
     """
     
@@ -314,19 +313,18 @@ def test_rating_model(helper, ids_test=None,
     Test rating model performance. The output of the mode is assumed to be
     either a single score, or distribution of scores (can be a histogram).
 
-    :param helper: ModelHelper object that contains the trained model
-    :param ids_test: optionally provide another set of data instances, replacing 
-                     those in `helper.ids`
-    :param output_layer: the rating layer, if more than out output exists
-                         if output_layer is None, we assume there is a single
-                         rating output
-    :param output_column: the column in ids that corresponds to the output
-    :param groups: if a number: repetitions of the testing procedure,
-                                after which the results are averaged
-                   if list of strings: group names to repeat over,
-                                       they are assumed to be different augmentations
-    :param remodel: change structure of the model when changing `output_layer`, or not
-    :param show_plot: plot results vs ground-truth
+    * helper:   ModelHelper object that contains the trained model
+    * ids_test: optionally provide another set of data instances, replacing 
+                those in `helper.ids`
+    * output_layer: the rating layer, if more than out output exists
+                    if output_layer is None, we assume there is a single rating output
+    * output_column: the column in ids that corresponds to the output
+    * groups: if a number: repetitions of the testing procedure,
+                           after which the results are averaged
+              if list of strings: group names to repeat over,
+                                  they are assumed to be different augmentations
+    * remodel: change structure of the model when changing `output_layer`, or not
+    * show_plot: plot results vs ground-truth
     :return: (y_true, y_pred, SRCC, PLCC)
     """
     print('Model outputs:', helper.model.output_names)
@@ -406,19 +404,19 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
     meaning that the variable is first quantized, and then a kind of
     'class-balancing' is performed based on the quantization.
 
-    :param ids: pd.DataFrame
-    :param stratify_on: column name from `ids` to stratify
-                        ("class balance") the partitions on
-    :param test_size: ratio (or number) of rows to assign to each of
-                      test and validation sets respectively
-                      e.g. (<validation size>, <test size>) or
-                           (<validation ratio>, <test ratio>)
-    :param save_path: optional save path for generated partitioned table
-    :param show_histograms: show histograms of the distribution of the
-                            stratification column
-    :param stratify: do stratification
-    :param random_state: initialize random state with a fixed value,
-                         for reproducibility
+    * ids: pd.DataFrame
+    * stratify_on: column name from `ids` to stratify
+                   ("class balance") the partitions on
+    * test_size: ratio (or number) of rows to assign to each of
+                 test and validation sets respectively
+                 e.g. (<validation size>, <test size>) or
+                      (<validation ratio>, <test ratio>)
+    * save_path: optional save path for generated partitioned table
+    * show_histograms: show histograms of the distribution of the
+                       stratification column
+    * stratify: do stratification
+    * random_state: initialize random state with a fixed value,
+                    for reproducibility
     :return: modified DataFrame
     """
     if not(isinstance(test_size, tuple) or
@@ -465,9 +463,9 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
     return ids
 
 
-# --------------------
+# ---------------
 # To be OBSOLETED
-# --------------------
+# ---------------
 
 def get_model_imagenet(net_name, input_shape=None, 
                        plot=False, **kwargs):
