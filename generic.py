@@ -69,17 +69,18 @@ class H5Helper(object):
         :param dataset_names: list of strings
         :param group_names: None, or list of strings
         """
-        with self._lock:
-            assert isinstance(data, np.ndarray) and\
-                   isinstance(dataset_names, (list, pd.core.series.Series))
+        with self._lock:            
+            assert isinstance(dataset_names, (list, pd.core.series.Series)), "`dataset_names` is of type {} and should be `list` or `pandas.core.series.Series`".format(type(dataset_names))
+                   
             hf = self.hf
             if group_names is None:
                 assert not isinstance(data, list),\
-                       'Data should be a numpy.ndarray when no groups are specified'
+                       '`data` should be a `numpy.ndarray` when no groups are specified'
                 self._write_datasets(hf, data, dataset_names)
             else:
                 assert isinstance(data, list) and len(data) == len(group_names),\
-                       'Each group name should correspond to a data list entry'
+                       'Each group name should correspond to a `data` list entry, `len(data)`={}, while `len(grou_names)`={}'.\
+                       format(len(data), len(group_names))
                 for i, name in enumerate(group_names):
                     group = hf.require_group(name)
                     self._write_datasets(group, data[i], dataset_names)
