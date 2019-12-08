@@ -434,15 +434,16 @@ class ImageAugmenter(object):
         """
         Rescale self.image proportionally
 
-        :param target: zoom relative to the original image size
+        :param target: (int) target resolution relative to the reference image resolution
                        taken to be either the height if `min_dim` else min(height, width)
+                       (float) zoom level
         :param proportion: modulating factor for the zoom
                            when proportion=1 target zoom is unchanged
                            when proportion=0 target zoom=1 (original size)
         :param min_dim: bool
         :return: self
         """
-        if isinstance(target, int):  # target_height
+        if isinstance(target, int): # target dimensions
             if not min_dim:
                 # choose height for zoom
                 zoom_target = self.image.shape[0] 
