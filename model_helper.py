@@ -5,7 +5,7 @@ from builtins import str
 from builtins import zip
 from builtins import range
 from builtins import object
-import os, sys, numbers, glob, shutil
+import os, sys, numbers, glob, shutil, inspect
 import multiprocessing as mp, pandas as pd, numpy as np
 from pprint import pprint
 from munch import Munch
@@ -74,7 +74,7 @@ class ModelHelper(object):
         self.model = model
         self.ids = ids
         self.verbose = verbose
-        self.model_name = ShortNameBuilder(prefix=root_name+'/', 
+        self.model_name = ShortNameBuilder(prefix=root_name+'/',
                                            sep=(':', ' '))
         self.model_cpu = None
 
@@ -526,8 +526,6 @@ class ModelHelper(object):
             short_name = self.model_name.subset(['i', 'o'])
             short_name(grp = groups_count,
                        lay = (output_layer or 'final'))
-            if name_suffix:
-                name_suffix = '_' + name_suffix
             file_path = os.path.join(self.params.features_root, 
                                      str(short_name) + name_suffix + '.h5')
             make_dirs(file_path)
@@ -535,18 +533,18 @@ class ModelHelper(object):
         params = self._updated_gen_params(shuffle       = False, 
                                           verbose       = verbose,
                                           fixed_batches = False)
-        if verbose:
+        if verbose>1:
             print('Saving activations for layer:', (output_layer or 'final'))
-            print('File:', file_path)
+            print('file:', file_path)
 
         data_gen = self.make_generator(ids, **params)
 
         for group_name in groups_list:
-            activ = self.predict(data_gen, output_layer=output_layer)
+            activ = self.predict(data_gen, 
+                                 output_layer = output_layer)
             activ = activ.astype(save_as_type)
             if len(activ.shape)==1:
-                activ = np.expand_dims(activ, 0)
-            
+                activ = np.expand_dims(activ, 0)            
             if postprocess_fn:
                 activ = postprocess_fn(activ)
                 
@@ -560,6 +558,45 @@ class ModelHelper(object):
                                  group_names=[group_name])
             del activ
 
+    def save_features(self, process_gen=None, batch_size = 1024,
+                      save_as_type = np.float32, overwrite = False):
+        """
+        Save augmented features to HDF5 file.
+        
+        * process_gen: if None: applies `self.gen_params.preprocess_fn`
+                       if function: applies `process_gen` as `self.gen_params.preprocess_fn`
+                       if generator: defines `preprocess_fn` functions to use for each augmentation
+        * batch_size: batch size used for storing activations (in an `np.ndarray`)
+        * save_as_type: convert the activations to this type, to reduce required storage
+        * overwrite: overwrite features file
+        """
+        ids = self.ids
+        print('[Saving features]')
+
+        if process_gen is None:
+            process_gen = [(self.gen_params.preprocess_fn,None)]
+        elif not inspect.isgeneratorfunction(process_gen):
+            process_gen = [(process_gen,None)]
+        else:
+            process_gen = process_gen()
+        
+        for (process_fn, args) in process_gen:
+            self.gen_params.process_fn = process_fn
+            if args:
+                arg_str = ', '.join(['{}:{}'.format(*a) for a in args.items()])
+                print('Augmentation args (' + arg_str + ')')
+
+            numel = len(ids)
+            for i in range(0,numel,batch_size):
+                istop = min(i+batch_size, numel)
+                print('Images',i,':',istop)
+                ids_batch = ids[i:istop].reset_index(drop=True)
+
+                self.save_activations(ids=ids_batch, verbose=True, 
+                                      groups       = [arg_str] if args else 1,
+                                      save_as_type = save_as_type,
+                                      over_write   = overwrite)
+                overwrite = False
 
 class TensorBoardWrapper(TensorBoard):
     """Sets the self.validation_data property for use with TensorBoard callback."""
