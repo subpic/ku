@@ -139,26 +139,29 @@ class H5Helper(object):
 
         * print_limit: number of datasets to list per group.
         """
+        size_bytes = os.path.getsize(self.file_name)
+        print('File size: {:.3f} GB'.format(size_bytes/(2.0**30)))
+        print('Groups:')
+
         hf = self.hf
         keys = list(hf.keys())
         for i, group_name in enumerate(keys):
             if i > print_limit:
-                print('[...] first %d items from a total of %d' % (print_limit, len(keys)))
+                print('[...] showing %d of %d' % (print_limit, len(keys)))
                 break
-            print(group_name, '\b/')
+            print('*',group_name, '\b/')
             group = hf[group_name]
             try:
                 group_keys = list(group.keys())
                 print(' ', end=' ')
                 for j, dataset_name in enumerate(group_keys):
                     if j > print_limit:
-                        print('[...] first %d from a total of %d' % (print_limit, len(group_keys)))
+                        print('[...] showing %d of %d' % (print_limit, len(group_keys)))
                         break
                     print(dataset_name, end=' ')
                 if len(group_keys):
                     print()
             except: pass
-        return ''
 
     @property
     def group_names(self):
