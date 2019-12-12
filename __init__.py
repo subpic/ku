@@ -3,8 +3,8 @@ from __future__ import absolute_import
 from . import generic, tensor_ops, image_utils
 from . import generators, model_helper, applications
     
-from keras import backend as K
-K.tf.compat.v1.logging.set_verbosity(K.tf.compat.v1.logging.ERROR)
+# from keras import backend as K
+# K.compat.v1.logging.set_verbosity(K.tf.compat.v1.logging.ERROR)
 
 # remove tensorflow warning
 import logging
