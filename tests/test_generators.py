@@ -65,7 +65,7 @@ def test_DataGeneratorDisk():
     assert gen.get_sizes(g[0]) == '([], [array<2,1>, array<2,1>])'
 
 def test_H5Reader_and_Writer():
-    with gen.H5Helper('data.h5', over_write=True) as h:
+    with gen.H5Helper('data.h5', overwrite=True) as h:
         data = np.expand_dims(np.array(ids.score), 1)
         h.write_data(data, list(ids.filename))
 
