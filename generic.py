@@ -25,13 +25,13 @@ class H5Helper(object):
     such that the helper can be used during training Keras models.
     """
     def __init__(self, file_name, file_mode=None, 
-                 memory_mapped=False, over_write=False, 
+                 memory_mapped=False, overwrite=False, 
                  backing_store=False, verbose=False):
         """
         * file_name: HDF5 file path
         * file_mode: one of 'a','w','r','w+','r+'
         * memory_mapped: enables memory mapped backing store
-        * over_write: over-write existing file
+        * overwrite: over-write existing file
         * backing_store: use another backing store
         * verbose: verbosity
         """
@@ -41,7 +41,7 @@ class H5Helper(object):
         self.memory_mapped = memory_mapped
         self.backing_store = backing_store        
         self._lock = mp.Lock()
-        _file_mode = file_mode or ('w' if over_write else 'a')
+        _file_mode = file_mode or ('w' if overwrite else 'a')
         with self._lock:
             if memory_mapped:
                 # memory mapping via h5py built-ins
@@ -441,3 +441,25 @@ def partition_rows(t, test_size=0.2, set_name='set',
     t.loc[itrain, set_name] = set_values[0]
     t.loc[itest,  set_name] = set_values[1]
     return t
+
+def array_overlap(a, b):
+    """
+    Returns indices of overlapping values in two arrays.
+    From: https://www.followthesheep.com/?p=1366
+    """ 
+    ia=np.argsort(a)
+    ib=np.argsort(b)
+    
+    # use searchsorted:
+    sort_left_a  = a[ia].searchsorted(b[ib], side='left')
+    sort_right_a = a[ia].searchsorted(b[ib], side='right')
+    #
+    sort_left_b  = b[ib].searchsorted(a[ia], side='left')
+    sort_right_b = b[ib].searchsorted(a[ia], side='right')
+
+    # which values of b are also in a?
+    inds_b = (sort_right_a-sort_left_a > 0).nonzero()[0]
+    # which values of a are also in b?
+    inds_a = (sort_right_b-sort_left_b > 0).nonzero()[0]
+
+    return ia[inds_a], ib[inds_b]

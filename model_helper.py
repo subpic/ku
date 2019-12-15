@@ -178,6 +178,7 @@ class ModelHelper(object):
                                       write_images=p.write_images)
         
         tb_callback.set_model(self.model)
+#        separator = self.model_name._ShortNameBuilder__sep[1]
         best_model_path = os.path.join(self.params.models_root, 
                                        self.model_name() + '_best_weights.h5')
         make_dirs(best_model_path)
@@ -498,7 +499,7 @@ class ModelHelper(object):
                 print('Model saved:', model_file)
 
     def save_activations(self, output_layer=None, file_path=None, ids=None,
-                         groups=1, verbose=False, over_write=False, name_suffix='',
+                         groups=1, verbose=False, overwrite=False, name_suffix='',
                          save_as_type=np.float32, postprocess_fn=None):
         """
         Save activations from a particular `output_layer` to an HDF5 file.
@@ -508,7 +509,7 @@ class ModelHelper(object):
         * ids:            data entries to compute the activations for, defaults to `self.ids`
         * groups:         a number denoting the number of augmentation repetitions, or list of group names
         * verbose:        verbosity
-        * over_write:     overwrite HDF5 file
+        * overwrite:      overwrite HDF5 file
         * name_suffix:    append suffix to name of file (before ext)
         * save_as_type:   save as a different data type, defaults to np.float32
         * postprocess_fn: post-processing function to apply to the activations
@@ -549,7 +550,7 @@ class ModelHelper(object):
                 activ = postprocess_fn(activ)
                 
             with H5Helper(file_path, 
-                          over_write = over_write, 
+                          overwrite = overwrite, 
                           verbose    = verbose) as h:
                 if groups == 1:
                     h.write_data(activ, ids[data_gen.inputs[0]])
@@ -580,6 +581,7 @@ class ModelHelper(object):
         else:
             process_gen = process_gen()
         
+        first_verbose = 2
         for (process_fn, args) in process_gen:
             self.gen_params.process_fn = process_fn
             if args:
@@ -592,11 +594,12 @@ class ModelHelper(object):
                 print('Images',i,':',istop)
                 ids_batch = ids[i:istop].reset_index(drop=True)
 
-                self.save_activations(ids=ids_batch, verbose=True, 
+                self.save_activations(ids=ids_batch, verbose = first_verbose, 
                                       groups       = [arg_str] if args else 1,
                                       save_as_type = save_as_type,
-                                      over_write   = overwrite)
+                                      overwrite   = overwrite)
                 overwrite = False
+                first_verbose = 1
 
 class TensorBoardWrapper(TensorBoard):
     """Sets the self.validation_data property for use with TensorBoard callback."""
