@@ -11,8 +11,9 @@ import logging
 class WarningFilter(logging.Filter):
     def filter(self, record):
         msg = record.getMessage()
-        tf_warning = 'retry (from tensorflow.contrib.learn.python.learn.datasets.base)' in msg
-        return not tf_warning           
+        tf_warning1 = 'retry (from tensorflow.contrib.learn.python.learn.datasets.base)' in msg        
+        tf_warning2 = 'is deprecated' in msg
+        return not (tf_warning1 or tf_warning2)
 logger = logging.getLogger('tensorflow')
 logger.addFilter(WarningFilter())
 
