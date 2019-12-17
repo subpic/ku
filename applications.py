@@ -391,6 +391,23 @@ def test_rating_model(helper, ids_test=None,
         plt.xlabel('predicted'); plt.ylabel('ground-truth'); plt.show()
     return y_test, y_pred, SRCC_test, PLCC_test
 
+def rating_metrics(y_true, y_pred, show_plot=True):    
+    """
+    Print out performance measures given ground-truth (`y_true`) and predicted (`y_pred`) scalar arrays.
+    """
+    y_true, y_pred = y_true.squeeze(), y_pred.squeeze()     
+    p_plcc = np.round(plcc(y_true, y_pred),3)
+    p_srcc = np.round(srcc(y_true, y_pred),3)
+    p_mae  = np.round(np.mean(np.abs(y_true - y_pred)),3)
+    p_rmse  = np.round(np.sqrt(np.mean((y_true - y_pred)**2)),3)
+    print('SRCC: {} | PLCC: {} | MAE: {} | RMSE: {}'.\
+          format(p_srcc, p_plcc, p_mae, p_rmse))
+
+    if show_plot:
+        plt.plot(y_true, y_pred,'.',markersize=1)
+        plt.xlabel('ground-truth')
+        plt.ylabel('predicted')
+        plt.show()
 
 def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
                         save_path=None, show_histograms=False, 
