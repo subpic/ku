@@ -395,7 +395,7 @@ def rating_metrics(y_true, y_pred, show_plot=True):
     """
     Print out performance measures given ground-truth (`y_true`) and predicted (`y_pred`) scalar arrays.
     """
-    y_true, y_pred = y_true.squeeze(), y_pred.squeeze()     
+    y_true, y_pred = np.array(y_true).squeeze(), np.array(y_pred).squeeze()
     p_plcc = np.round(plcc(y_true, y_pred),3)
     p_srcc = np.round(srcc(y_true, y_pred),3)
     p_mae  = np.round(np.mean(np.abs(y_true - y_pred)),3)
