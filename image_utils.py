@@ -181,8 +181,9 @@ def resize_image(x, size):
             x = mapmm(x, (minx, maxx))
     return x
 
-def resize_folder(path_src, path_dst, image_size_dst=None, 
-                  over_write=False, format_dst='jpg'):
+def resize_folder(path_src, path_dst, image_size_dst=None,
+                  over_write=False, format_dst='jpg', 
+                  process_fn=None, jpeg_quality=95):
     """
     Resize an image folder, copying the resized images to a new destination folder.
 
@@ -191,6 +192,8 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
     * image_size_dst: optionally resize the images
     * over_write:     enable to over-write destination images
     * format_dst:     format type, defaults to 'jpg'
+    * process_fn:     apply custom processing function before resizing (optional) and saving
+    * jpeg_quality:   quality level if saving as a JPEG image
     :return:          list of file names that triggered an error during read/resize/write
     """
     
@@ -223,6 +226,7 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
             # check that image hasn't been already processed
             if over_write or not os.path.isfile(file_path_dst): 
                 im = Image.open(file_path_src)
+                im = process_fn(im)
                 if image_size_dst is not None:
                     if isinstance(image_size_dst, float):
                         actual_size = [int(y*image_size_dst) for y in im.size]
@@ -232,7 +236,7 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
                 else:
                     imx = im
                 if format_dst.lower() in ('jpg', 'jpeg'):
-                    imx.save(file_path_dst, 'JPEG', quality=95)
+                    imx.save(file_path_dst, 'JPEG', quality=jpeg_quality)
                 else:
                     imx.save(file_path_dst, format_dst.upper())
         except:
@@ -430,7 +434,7 @@ class ImageAugmenter(object):
             self.image = np.fliplr(self.image)
         return self
     
-    def rescale(self, target, proportion = 1, min_dim = False):
+    def rescale(self, target, proportion=1, min_dim=False):
         """
         Rescale self.image proportionally
 
@@ -461,22 +465,42 @@ class ImageAugmenter(object):
                                        mode='reflect')
         return self
     
-    def resize(self, size, ensure_min=False):
+    def resize(self, size, ensure_min=False, fit_frame=False):
         """
-        Resize image to target dimensions
+        Resize image to target dimensions, exact or fitting inside frame
 
-        * size: tuple of (height, width)
+        * size: (height, width) tuple
         * ensure_min: if true, `size` is the minimum size allowed
                       a dimension is not changed unless it is below the minimum size
+        * fit_frame: size concerns the dimensions of the frame that the image is to be 
+                     fitted in, while preserving its aspect ratio
         :return: self
         """
-        imsz = self.image.shape[:2]
-        # resize if needed only
-        if (not ensure_min and size != imsz) or\
-           (ensure_min and (imsz[0] < size[0] or imsz[1] < size[1])):
-            if ensure_min:
-                size = [max(a, b) for a, b in zip(imsz, size)]
-            self.image = transform.resize(self.image, size, 
+        imsz = self.image.shape[:2] # (height, width)
+                
+        if not fit_frame:
+            # resize if needed only
+            if (not ensure_min and size != imsz) or\
+               (ensure_min and (imsz[0] < size[0] or imsz[1] < size[1])):
+                if ensure_min:
+                    size = [max(a, b) for a, b in zip(imsz, size)]
+                self.image = transform.resize(self.image, size, 
+                                              preserve_range=True)
+        else:
+            image_height, image_width = imsz
+            frame_height, frame_width = size
+            aspect_image = float(image_width)/image_height
+            aspect_frame = float(frame_width)/frame_height
+            if aspect_image > aspect_frame: # fit width
+                target_width = frame_width
+                target_height = frame_width / aspect_image
+            else: # fit height
+                target_height = frame_height
+                target_width = frame_height * aspect_image
+
+            target_width, target_height = int(round(target_width)), int(round(target_height))
+
+            self.image = transform.resize(self.image, (target_height, target_width), 
                                           preserve_range=True)
         return self
 
