@@ -384,10 +384,11 @@ class ImageAugmenter(object):
     
     def crop(self, crop_size, crop_pos=None, clip_rotation=False):
         """
-        Crop a patch out of self.image
+        Crop a patch out of self.image. Relies on `extract_patch`.
 
-        * crop_size: dimensions of the crop
+        * crop_size: dimensions of the crop (pair of H x W)
         * crop_pos: if None, then a random crop is taken, otherwise the given `crop_pos` position is used
+                    pair of relative coordinates: (0,0) = upper left corner, (1,1) = lower right corner
         * clip_rotation: clip a border around the image, such that the edge resulting from
                          having rotated the image is not visible
         :return: self
