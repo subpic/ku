@@ -81,7 +81,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
     def _read_data(self, ids_batch, accessor):        
         X = []
         if accessor:
-            assert isinstance(accessor, (tuple, list)) or callable(accessor)
+            assert isinstance(accessor, (tuple, list)) or callable(accessor), 'Generator inputs/outputs must be of type list, tuple, or function'
 
             if callable(accessor):
                 X = accessor(ids_batch)
@@ -104,7 +104,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
         y = self._read_data(ids_batch, params.outputs)        
         X_list = self._read_data(ids_batch, params.inputs_df)
             
-        assert isinstance(params.inputs, (tuple, list))
+        assert isinstance(params.inputs, (tuple, list)), 'Generator inputs/outputs must be of type list or tuple'
 
         for input_name in params.inputs:
             data = []
@@ -198,7 +198,7 @@ class DataGeneratorHDF5(DataGeneratorDisk):
         y = self._read_data(ids_batch, params.outputs)
         X_list = self._read_data(ids_batch, params.inputs_df)
 
-        assert isinstance(params.inputs, (tuple, list))
+        assert isinstance(params.inputs, (tuple, list)), 'Generator inputs/outputs must be of type list or tuple'
         
         if params.data_path:
             with H5Helper(params.data_path, file_mode='r',
