@@ -265,8 +265,8 @@ def check_images(image_dir, image_types =\
     image_names_err = []
     image_names_all = []
     for (i, file_path) in enumerate(file_list):
-        if i % (old_div(len(file_list),20)) == 0: print(i, end=' ')
-        elif i % (old_div(len(file_list),1000)) == 0: print('.', end=' ')
+        if i % (old_div(len(file_list),20)) == 0: print(' ',i,end=' ')
+        elif i % (old_div(len(file_list),1000)) == 0: print('.',end='')
 
         try:            
             file_dir, file_name = os.path.split(file_path)
