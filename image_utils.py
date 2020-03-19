@@ -213,8 +213,8 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
     
     errors = []
     for (i, file_path_src) in enumerate(file_list):
-        if i % 100 == 0:
-            print(i, end=' ')
+        if i % (old_div(len(file_list),20)) == 0: print(' ',i,end=' ')
+        elif i % (old_div(len(file_list),1000)) == 0: print('.',end='')
 
         try:            
             file_name = os.path.split(file_path_src)[1]
@@ -226,7 +226,8 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
             # check that image hasn't been already processed
             if over_write or not os.path.isfile(file_path_dst): 
                 im = Image.open(file_path_src)
-                im = process_fn(im)
+                if process_fn is not None:
+                    im = process_fn(im)
                 if image_size_dst is not None:
                     if isinstance(image_size_dst, float):
                         actual_size = [int(y*image_size_dst) for y in im.size]
@@ -239,8 +240,10 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
                     imx.save(file_path_dst, 'JPEG', quality=jpeg_quality)
                 else:
                     imx.save(file_path_dst, format_dst.upper())
-        except:
-            print('error saving', file_name)
+        
+        except Exception as e:
+            print('Error saving', file_name)
+            print('Exception:', e.message)
             errors.append(file_name)
             
     return errors
