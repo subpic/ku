@@ -168,12 +168,13 @@ def extract_patch(im, patch_size=(224, 224),
 
 def cropout_random_patch(im, patch_size=(224, 224), border=(0, 0), fill_val=0):
     """
-    Extract a random image patch of size `patch_size`,
+    Cropout (replace) a random patch of size `patch_size` with `fill_val`,
     with the center of the patch inside `border`
 
     * im: np.ndarray of size H x W x C
     * patch_size: 2-tuple of patch H x W
     * border: 2-tuple of border H x W
+    * fill_val: value to fill into the cropout
     :return: np.ndarray
     """
     H, W, _ = im.shape
@@ -196,6 +197,15 @@ def cropout_random_patch(im, patch_size=(224, 224), border=(0, 0), fill_val=0):
 def cropout_patch(im, patch_size=(224, 224),
                   patch_position=(0.5, 0.5), fill_val=0):
     """
+    Cropout (replace) a patch of size `patch_size` with `fill_val`,
+    with its center at `patch_position` expressed as a ratio of the image's H and W
+
+    * im: np.ndarray of size H x W x C
+    * patch_size: 2-tuple of patch H x W
+    * patch_position: 2-tuple containing patch location
+                      (0,0) = upper left corner, (1,1) = lower right corner
+    * fill_val: value to fill into the cropout
+    :return: np.ndarray
     """
     Py, Px         = patch_position
     H, W, _        = im.shape
@@ -213,6 +223,14 @@ def cropout_patch(im, patch_size=(224, 224),
     return im
 
 def imdistort_image(im, dist_fn, **params):
+    """
+    Distort an image `im` by `dist_fn` with provided parameters.
+    Requires the imdistort_python package.
+
+    * im: np.ndarray of size H x W x C
+    * dist_fn: String name of the distortion function
+    :return: np.ndarray
+    """
     try:
         from imdistort_python import distortions
         im = getattr(distortions, dist_fn)(im, **params)
