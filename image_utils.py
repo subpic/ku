@@ -135,6 +135,7 @@ def extract_random_patch(im, patch_size=(224, 224), border=(0, 0)):
     Y0 = int(rand(1)*(Y_max-Y_min) + Y_min)
     X0 = int(rand(1)*(X_max-X_min) + X_min)    
     patch = im[Y0:Y0+H_crop, X0:X0+W_crop, ]
+    
     return patch
 
 def extract_patch(im, patch_size=(224, 224), 
@@ -162,7 +163,81 @@ def extract_patch(im, patch_size=(224, 224),
              min(max(int(Y0), 0), Y_max)
 
     patch = im[Y0:Y0+H_crop, X0:X0+W_crop, ]
+    
     return patch
+
+def cropout_random_patch(im, patch_size=(224, 224), border=(0, 0), fill_val=0):
+    """
+    Cropout (replace) a random patch of size `patch_size` with `fill_val`,
+    with the center of the patch inside `border`
+
+    * im: np.ndarray of size H x W x C
+    * patch_size: 2-tuple of patch H x W
+    * border: 2-tuple of border H x W
+    * fill_val: value to fill into the cropout
+    :return: np.ndarray
+    """
+    H, W, _ = im.shape
+    H_crop, W_crop = patch_size
+    H_crop = min(H, H_crop)
+    W_crop = min(W, W_crop)    
+    Y_min, X_min = border
+    Y_max, X_max = (H - H_crop - Y_min, W - W_crop - X_min)
+    if Y_max < Y_min: 
+        Y_min = old_div((H - H_crop), 2)
+        Y_max = Y_min
+    if X_max < X_min:
+        X_min = old_div((W - W_crop), 2)
+        X_max = X_min
+    Y0 = int(rand(1)*(Y_max-Y_min) + Y_min)
+    X0 = int(rand(1)*(X_max-X_min) + X_min)    
+    im[Y0:Y0+H_crop, X0:X0+W_crop, ] = fill_val
+    return im
+
+def cropout_patch(im, patch_size=(224, 224),
+                  patch_position=(0.5, 0.5), fill_val=0):
+    """
+    Cropout (replace) a patch of size `patch_size` with `fill_val`,
+    with its center at `patch_position` expressed as a ratio of the image's H and W
+
+    * im: np.ndarray of size H x W x C
+    * patch_size: 2-tuple of patch H x W
+    * patch_position: 2-tuple containing patch location
+                      (0,0) = upper left corner, (1,1) = lower right corner
+    * fill_val: value to fill into the cropout
+    :return: np.ndarray
+    """
+    Py, Px         = patch_position
+    H, W, _        = im.shape
+    H_crop, W_crop = patch_size
+    
+    H_crop, W_crop = min(H, H_crop), min(W, W_crop)
+    Y_max, X_max   = (H - H_crop, W - W_crop)
+    Yc, Xc         = H*Py, W*Px
+
+    X0, Y0 = Xc-old_div(W_crop,2), Yc-old_div(H_crop,2)
+    X0, Y0 = min(max(int(X0), 0), X_max),\
+             min(max(int(Y0), 0), Y_max)
+
+    im[Y0:Y0+H_crop, X0:X0+W_crop, ] = fill_val
+    return im
+
+def imdistort_image(im, dist_fn, **params):
+    """
+    Distort an image `im` by `dist_fn` with provided parameters.
+    Requires the imdistort_python package.
+
+    * im: np.ndarray of size H x W x C
+    * dist_fn: String name of the distortion function
+    :return: np.ndarray
+    """
+    try:
+        from imdistort_python import distortions
+        im = getattr(distortions, dist_fn)(im, **params)
+    except ImportError:
+        print("Import Error: Couldn't load imdistort_python. Could not perform distortion.")           
+    
+    return im
 
 def resize_image(x, size):
     """
@@ -385,7 +460,7 @@ class ImageAugmenter(object):
                                       mode='symmetric')            
         return self
     
-    def crop(self, crop_size, crop_pos=None, clip_rotation=False):
+    def crop(self, crop_size, crop_pos=None, clip_rotation=False, cropout=False):
         """
         Crop a patch out of self.image. Relies on `extract_patch`.
 
@@ -402,9 +477,9 @@ class ImageAugmenter(object):
         # if using a ratio crop, compute actual crop size
         crop_size = [np.int32(c*dim) if 0 < c <= (1+1e-6) else c\
                      for c, dim in zip(crop_size, self.image.shape[:2])]
-        
+             
         if self.verbose:
-            print('image_size:', self.image.shape, 'crop_size:', crop_size)
+            print('image_size:', self.image.shape, 'crop_size:', crop_size, 'cropping out:', cropout)
 
         if crop_pos is None:
             if crop_size != self.image.shape[:2]:
@@ -416,14 +491,24 @@ class ImageAugmenter(object):
                     border = (old_div((x[0]-y[0]),2), old_div((x[1]-y[1]),2))
                 else:
                     border = (0, 0)
-                self.image = extract_random_patch(self.image,
-                                                  patch_size = crop_size, 
-                                                  border     = border)
+                if cropout:
+                    self.image = cropout_random_patch(self.image,
+                                                      patch_size = crop_size, 
+                                                      border     = border)
+                else:
+                    self.image = extract_random_patch(self.image,
+                                                      patch_size = crop_size, 
+                                                      border     = border)
         else:
             if crop_size != self.image.shape[:2]:
-                self.image = extract_patch(self.image, 
-                                           patch_size     = crop_size, 
-                                           patch_position = crop_pos)
+                if cropout:
+                    self.image = cropout_patch(self.image,
+                                               patch_size     = crop_size,
+                                               patch_position = crop_pos)
+                else:
+                    self.image = extract_patch(self.image, 
+                                               patch_size     = crop_size, 
+                                               patch_position = crop_pos)
         return self
     
     def fliplr(self, do=None):
