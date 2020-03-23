@@ -4,11 +4,11 @@ import os, scipy, h5py, time, sys
 from munch import Munch
 from sklearn.model_selection import train_test_split
 from scipy import stats
-import model_helper as mh
-import applications as apps
-import tensor_ops as ops
-import generic as gen
-import image_utils as iu
+from .model_helper import *
+from .applications import *
+from .tensor_ops import *
+from .generic import *
+from .image_utils import *
 import matplotlib.pyplot as plt
 
 from keras.layers import Input, Dropout
