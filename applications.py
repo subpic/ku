@@ -237,7 +237,7 @@ def model_inception_pooled(input_shape=(None, None, 3), indexes=list(range(11)),
     Similar to `model_inception_multigap`.
 
     * input_shape: shape of the input images
-    * indexes: indices to use from the usual GAPs
+    * indexes: indices to use from the usual pools
     * pool_size: spatial extend of the MLSP features
     * name: name of the model
     * return_sizes: return the sizes of each layer: (model, pool_sizes)
@@ -266,12 +266,13 @@ def model_inception_pooled(input_shape=(None, None, 3), indexes=list(range(11)),
     else:
         return model
     
-def model_inceptionresnet_pooled(input_shape=(None, None, 3), pool_size=(5, 5),
-                                 name='', return_sizes=False):
+def model_inceptionresnet_pooled(input_shape=(None, None, 3), indexes=list(range(43)),
+                                 pool_size=(5, 5), name='', return_sizes=False):
     """
     Returns the wide MLSP features, spatially pooled, from InceptionResNetV2.
 
     * input_shape: shape of the input images
+    * indexes: indices of the modules to use
     * pool_size: spatial extend of the MLSP features
     * name: name of the model
     * return_sizes: return the sizes of each layer: (model, pool_sizes)
@@ -288,11 +289,11 @@ def model_inceptionresnet_pooled(input_shape=(None, None, 3), pool_size=(5, 5),
                           name='feature_resizer') 
 
     feature_layers = [l for l in model_base.layers if 'mixed' in l.name]
+    feature_layers = [feature_layers[i] for i in indexes]
     pools = [ImageResizer(l.output) for l in feature_layers]
     conc_pools = Concatenate(name='conc_pools', axis=3)(pools)
 
-    model = Model(inputs  = model_base.input, 
-                  outputs = conc_pools)
+    model = Model(inputs  = model_base.input, outputs = conc_pools)
     if name: model.name = name
 
     if return_sizes:
@@ -400,14 +401,15 @@ def rating_metrics(y_true, y_pred, show_plot=True):
     p_srcc = np.round(srcc(y_true, y_pred),3)
     p_mae  = np.round(np.mean(np.abs(y_true - y_pred)),3)
     p_rmse  = np.round(np.sqrt(np.mean((y_true - y_pred)**2)),3)
-    print('SRCC: {} | PLCC: {} | MAE: {} | RMSE: {}'.\
-          format(p_srcc, p_plcc, p_mae, p_rmse))
-
+    
     if show_plot:
+        print('SRCC: {} | PLCC: {} | MAE: {} | RMSE: {}'.\
+              format(p_srcc, p_plcc, p_mae, p_rmse))    
         plt.plot(y_true, y_pred,'.',markersize=1)
         plt.xlabel('ground-truth')
         plt.ylabel('predicted')
         plt.show()
+    return (p_srcc, p_plcc, p_mae, p_rmse)
 
 def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
                         save_path=None, show_histograms=False, 

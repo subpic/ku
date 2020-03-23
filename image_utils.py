@@ -264,7 +264,7 @@ def check_images(image_dir, image_types =\
         pattern = os.path.join(image_dir, imtype)
         file_list.extend(glob.glob(pattern))
     print('Found', len(file_list), 'images')
-        
+
     image_names_err = []
     image_names_all = []
     for (i, file_path) in enumerate(file_list):
