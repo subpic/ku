@@ -110,31 +110,81 @@ def read_image_batch(image_paths, image_size=None, as_list=False):
         else: images.append(x)
     return images
 
+def get_patch_dims(im, patch_size, patch_position):
+    """
+    Returns the dimensions of an image patch of size `patch_size`,
+    with its center at `patch_position` expressed as a ratio of the image's H and W
+    
+    * im:             np.ndarray of size H x W x C
+    * patch_size:     2-tuple of patch H x W
+    * patch_position: 2-tuple containing patch location
+                      (0,0) = upper left corner, (1,1) = lower right corner
+    :return:          tuple of (upper left corner X coordinate, 
+                                upper left corner Y coordinate,
+                                lower right corner X coordinate,
+                                lower right corner Y coordinate)
+    """
+    Py, Px         = patch_position
+    H, W, _        = im.shape
+    H_crop, W_crop = patch_size
+    
+    H_crop, W_crop = min(H, H_crop), min(W, W_crop)
+    Y_max, X_max   = (H - H_crop, W - W_crop)
+    Yc, Xc         = H*Py, W*Px
+
+    X0, Y0 = Xc-old_div(W_crop,2), Yc-old_div(H_crop,2)
+    X0, Y0 = min(max(int(X0), 0), X_max),\
+             min(max(int(Y0), 0), Y_max)
+    
+    return (X0, Y0, X0+W_crop, Y0+H_crop)
+
+def get_random_patch_dims(im, patch_size, border):
+    """
+    Returns the dimensions of a random image patch of size `patch_size`,
+    with the center of the patch inside `border`
+    
+    * im:         np.ndarray of size H x W x C
+    * patch_size: 2-tuple of patch H x W
+    * border:     2-tuple of border H x W
+                  (0,0) = upper left corner, (1,1) = lower right corner
+    :return:      tuple of (upper left corner X coordinate, 
+                            upper left corner Y coordinate,
+                            lower right corner X coordinate,
+                            lower right corner Y coordinate)
+    """
+    H, W, _        = im.shape
+    H_crop, W_crop = patch_size
+    
+    H_crop, W_crop = min(H, H_crop), min(W, W_crop)    
+    Y_min, X_min   = border
+    Y_max, X_max   = (H - H_crop - Y_min, W - W_crop - X_min)
+    
+    if Y_max < Y_min: 
+        Y_min = old_div((H - H_crop), 2)
+        Y_max = Y_min
+    
+    if X_max < X_min:
+        X_min = old_div((W - W_crop), 2)
+        X_max = X_min
+    
+    Y0 = int(rand(1)*(Y_max-Y_min) + Y_min)
+    X0 = int(rand(1)*(X_max-X_min) + X_min)  
+    
+    return (X0, Y0, X0+W_crop, Y0+H_crop)
+
 def extract_random_patch(im, patch_size=(224, 224), border=(0, 0)):
     """
     Extract a random image patch of size `patch_size`,
     with the center of the patch inside `border`
 
-    * im: np.ndarray of size H x W x C
+    * im:         np.ndarray of size H x W x C
     * patch_size: 2-tuple of patch H x W
-    * border: 2-tuple of border H x W
-    :return: np.ndarray
+    * border:     2-tuple of border H x W
+    :return:      np.ndarray
     """
-    H, W, _ = im.shape
-    H_crop, W_crop = patch_size
-    H_crop = min(H, H_crop)
-    W_crop = min(W, W_crop)    
-    Y_min, X_min = border
-    Y_max, X_max = (H - H_crop - Y_min, W - W_crop - X_min)
-    if Y_max < Y_min: 
-        Y_min = old_div((H - H_crop), 2)
-        Y_max = Y_min
-    if X_max < X_min:
-        X_min = old_div((W - W_crop), 2)
-        X_max = X_min
-    Y0 = int(rand(1)*(Y_max-Y_min) + Y_min)
-    X0 = int(rand(1)*(X_max-X_min) + X_min)    
-    patch = im[Y0:Y0+H_crop, X0:X0+W_crop, ]
+    (X0, Y0, X1, Y1) = get_random_patch_dims(im, patch_size, border)
+    
+    patch = im[Y0:Y1, X0:X1, ]
     
     return patch
 
@@ -144,25 +194,15 @@ def extract_patch(im, patch_size=(224, 224),
     Extract a patch of size `patch_size`,
     with its center at `patch_position` expressed as a ratio of the image's H and W
 
-    * im: np.ndarray of size H x W x C
-    * patch_size: 2-tuple of patch H x W
+    * im:             np.ndarray of size H x W x C
+    * patch_size:     2-tuple of patch H x W
     * patch_position: 2-tuple containing patch location
                       (0,0) = upper left corner, (1,1) = lower right corner
-    :return: np.ndarray
+    :return:          np.ndarray
     """
-    Py, Px         = patch_position
-    H, W, _        = im.shape
-    H_crop, W_crop = patch_size
-    
-    H_crop, W_crop = min(H, H_crop), min(W, W_crop)
-    Y_max, X_max   = (H - H_crop, W - W_crop)
-    Yc, Xc         = H*Py, W*Px
+    (X0, Y0, X1, Y1) = get_patch_dims(im, patch_size, patch_position)
 
-    X0, Y0 = Xc-old_div(W_crop,2), Yc-old_div(H_crop,2)
-    X0, Y0 = min(max(int(X0), 0), X_max),\
-             min(max(int(Y0), 0), Y_max)
-
-    patch = im[Y0:Y0+H_crop, X0:X0+W_crop, ]
+    patch = im[Y0:Y1, X0:X1, ]
     
     return patch
 
@@ -171,27 +211,16 @@ def cropout_random_patch(im, patch_size=(224, 224), border=(0, 0), fill_val=0):
     Cropout (replace) a random patch of size `patch_size` with `fill_val`,
     with the center of the patch inside `border`
 
-    * im: np.ndarray of size H x W x C
+    * im:         np.ndarray of size H x W x C
     * patch_size: 2-tuple of patch H x W
-    * border: 2-tuple of border H x W
-    * fill_val: value to fill into the cropout
-    :return: np.ndarray
+    * border:     2-tuple of border H x W
+    * fill_val:   value to fill into the cropout
+    :return:      np.ndarray
     """
-    H, W, _ = im.shape
-    H_crop, W_crop = patch_size
-    H_crop = min(H, H_crop)
-    W_crop = min(W, W_crop)    
-    Y_min, X_min = border
-    Y_max, X_max = (H - H_crop - Y_min, W - W_crop - X_min)
-    if Y_max < Y_min: 
-        Y_min = old_div((H - H_crop), 2)
-        Y_max = Y_min
-    if X_max < X_min:
-        X_min = old_div((W - W_crop), 2)
-        X_max = X_min
-    Y0 = int(rand(1)*(Y_max-Y_min) + Y_min)
-    X0 = int(rand(1)*(X_max-X_min) + X_min)    
-    im[Y0:Y0+H_crop, X0:X0+W_crop, ] = fill_val
+    (X0, Y0, X1, Y1) = get_random_patch_dims(im, patch_size, border)
+    
+    im[Y0:Y1, X0:X1, ] = fill_val
+    
     return im
 
 def cropout_patch(im, patch_size=(224, 224),
@@ -200,34 +229,24 @@ def cropout_patch(im, patch_size=(224, 224),
     Cropout (replace) a patch of size `patch_size` with `fill_val`,
     with its center at `patch_position` expressed as a ratio of the image's H and W
 
-    * im: np.ndarray of size H x W x C
-    * patch_size: 2-tuple of patch H x W
+    * im:             np.ndarray of size H x W x C
+    * patch_size:     2-tuple of patch H x W
     * patch_position: 2-tuple containing patch location
                       (0,0) = upper left corner, (1,1) = lower right corner
-    * fill_val: value to fill into the cropout
-    :return: np.ndarray
+    * fill_val:       value to fill into the cropout
+    :return:          np.ndarray
     """
-    Py, Px         = patch_position
-    H, W, _        = im.shape
-    H_crop, W_crop = patch_size
-    
-    H_crop, W_crop = min(H, H_crop), min(W, W_crop)
-    Y_max, X_max   = (H - H_crop, W - W_crop)
-    Yc, Xc         = H*Py, W*Px
+    (X0, Y0, H_crop, W_crop) = get_patch_dims(im, patch_size, patch_position)
 
-    X0, Y0 = Xc-old_div(W_crop,2), Yc-old_div(H_crop,2)
-    X0, Y0 = min(max(int(X0), 0), X_max),\
-             min(max(int(Y0), 0), Y_max)
-
-    im[Y0:Y0+H_crop, X0:X0+W_crop, ] = fill_val
+    im[Y0:Y1, X0:X1, ] = fill_val
     return im
 
 def resize_image(x, size):
     """
     Resize image using skimage.transform.resize even when range is outside [-1,1].
 
-    * x: np.ndarray
-    * size: new size (H,W)
+    * x:     np.ndarray
+    * size:  new size (H,W)
     :return: np.ndarray
     """
     if size != x.shape[:2]:
