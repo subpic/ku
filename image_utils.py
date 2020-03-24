@@ -222,23 +222,6 @@ def cropout_patch(im, patch_size=(224, 224),
     im[Y0:Y0+H_crop, X0:X0+W_crop, ] = fill_val
     return im
 
-def imdistort_image(im, dist_fn, **params):
-    """
-    Distort an image `im` by `dist_fn` with provided parameters.
-    Requires the imdistort_python package.
-
-    * im: np.ndarray of size H x W x C
-    * dist_fn: String name of the distortion function
-    :return: np.ndarray
-    """
-    try:
-        from imdistort_python import distortions
-        im = getattr(distortions, dist_fn)(im, **params)
-    except ImportError:
-        print("Import Error: Couldn't load imdistort_python. Could not perform distortion.")           
-    
-    return im
-
 def resize_image(x, size):
     """
     Resize image using skimage.transform.resize even when range is outside [-1,1].
