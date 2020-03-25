@@ -228,6 +228,7 @@ def mapmm(x, new_range = (0, 1)):
 
 def plcc(x, y):
     """Pearson Linear Correlation Coefficient"""
+    x, y = np.float32(x), np.float32(y)
     return scipy.stats.pearsonr(x, y)[0]
 
 def srocc(xs, ys):
