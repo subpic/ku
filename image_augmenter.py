@@ -16,7 +16,7 @@ import PIL
 from PIL import Image
 import matplotlib.pyplot as plt
 from .generic import *
-from .image_utils import *
+from ku import image_utils as iu
 
 
 class ImageAugmenter(object):
@@ -96,21 +96,21 @@ class ImageAugmenter(object):
                 else:
                     border = (0, 0)
                 if cropout:
-                    self.image = cropout_random_patch(self.image,
+                    self.image = iu.cropout_random_patch(self.image,
                                                       patch_size = crop_size, 
                                                       border     = border)
                 else:
-                    self.image = extract_random_patch(self.image,
+                    self.image = iu.extract_random_patch(self.image,
                                                       patch_size = crop_size, 
                                                       border     = border)
         else:
             if crop_size != self.image.shape[:2]:
                 if cropout:
-                    self.image = cropout_patch(self.image,
+                    self.image = iu.cropout_patch(self.image,
                                                patch_size     = crop_size,
                                                patch_position = crop_pos)
                 else:
-                    self.image = extract_patch(self.image, 
+                    self.image = iu.extract_patch(self.image, 
                                                patch_size     = crop_size, 
                                                patch_position = crop_pos)
         return self
