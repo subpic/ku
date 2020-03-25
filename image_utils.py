@@ -237,7 +237,7 @@ def cropout_patch(im, patch_size=(224, 224),
     * fill_val:       value to fill into the cropout
     :return:          np.ndarray
     """
-    (X0, Y0, H_crop, W_crop) = get_patch_dims(im, patch_size, patch_position)
+    (X0, Y0, X1, Y1) = get_patch_dims(im, patch_size, patch_position)
 
     im[Y0:Y1, X0:X1, ] = fill_val
     return im
