@@ -295,7 +295,6 @@ def extract_patch(im, patch_size=(224, 224),
     :return:          np.ndarray
     """
     (X0, Y0, X1, Y1) = get_patch_dims(im, patch_size, patch_position)
-
     return im[Y0:Y1, X0:X1, ]
 
 def get_random_patch_dims(im, patch_size, border):
@@ -342,9 +341,40 @@ def extract_random_patch(im, patch_size=(224, 224), border=(0, 0)):
     * border:     2-tuple of border H x W
     :return:      np.ndarray
     """
-    (X0, Y0, X1, Y1) = get_random_patch_dims(im, patch_size, border)
-    
+    (X0, Y0, X1, Y1) = get_random_patch_dims(im, patch_size, border)    
     return im[Y0:Y1, X0:X1, ]
+
+def cropout_patch(im, patch_size=(224, 224),
+                  patch_position=(0.5, 0.5), fill_val=0):
+    """
+    Cropout (replace) a patch of size `patch_size` with `fill_val`,
+    with its center at `patch_position` expressed as a ratio of the image's H and W
+
+    * im:             np.ndarray of size H x W x C
+    * patch_size:     2-tuple of patch H x W
+    * patch_position: 2-tuple containing patch location
+                      (0,0) = upper left corner, (1,1) = lower right corner
+    * fill_val:       value to fill into the cropout
+    :return:          np.ndarray
+    """
+    (X0, Y0, X1, Y1) = get_patch_dims(im, patch_size, patch_position)
+    im[Y0:Y1, X0:X1, ] = fill_val
+    return im
+
+def cropout_random_patch(im, patch_size=(224, 224), border=(0, 0), fill_val=0):
+    """
+    Cropout (replace) a random patch of size `patch_size` with `fill_val`,
+    with the center of the patch inside `border`
+
+    * im:         np.ndarray of size H x W x C
+    * patch_size: 2-tuple of patch H x W
+    * border:     2-tuple of border H x W
+    * fill_val:   value to fill into the cropout
+    :return:      np.ndarray
+    """
+    (X0, Y0, X1, Y1) = get_random_patch_dims(im, patch_size, border)
+    im[Y0:Y1, X0:X1, ] = fill_val    
+    return im
 
 # modified from stackoverflow
 def largest_rotated_rect(w, h, angle):
