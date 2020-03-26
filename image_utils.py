@@ -496,6 +496,39 @@ class ImageAugmenter(object):
                                            patch_size     = crop_size, 
                                            patch_position = crop_pos)
         return self
+
+    def cropout(self, cropout_size, cropout_pos=None, fill_val=0):
+        """
+        Cropout a patch of self.image and replace it with `fill_val`. Relies on `cropout_patch`.
+        
+        * cropout_size: dimensions of the cropout (pair of H x W)
+        * cropout_pos:  if None, then a random cropout is taken, otherwise the given `cropout_pos` position is used
+                        pair of relative coordinates: (0,0) = upper left corner, (1,1) = lower right corner
+        * fill_val:     value to fill the cropout with
+        :return:        self
+        """
+        # equally cropout in both dimensions if only one number is provided
+        if not isinstance(crop_size, (list, tuple)):
+            crop_size = [crop_size, crop_size]
+        # if using a ratio cropout, compute actual cropout size
+        crop_size = [np.int32(c*dim) if 0 < c <= (1+1e-6) else c\
+                     for c, dim in zip(crop_size, self.image.shape[:2])]
+             
+        if self.verbose:
+            print('image_size:', self.image.shape, 'cropout_size:', cropout_size, 'fill_val:', fill_val)
+
+        if cropout_pos is None:
+            if cropout_size != self.image.shape[:2]:
+                border = (0, 0)
+                self.image = iu.cropout_random_patch(self.image,
+                                                     patch_size = crop_size,
+                                                     border     = border)
+        else:
+            if crop_size != self.image.shape[:2]:
+                self.image = iu.cropout_patch(self.image,
+                                              patch_size     = crop_size,
+                                              patch_position = crop_pos)
+        return self
     
     def fliplr(self, do=None):
         """
