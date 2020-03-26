@@ -341,8 +341,9 @@ def cropout_patch(im, patch_size=(224, 224),
     :return:          np.ndarray
     """
     (X0, Y0, X1, Y1) = get_patch_dims(im, patch_size, patch_position)
-    im[Y0:Y1, X0:X1, ] = fill_val
-    return im
+    im_ = im.copy()
+    im_[Y0:Y1, X0:X1, ] = fill_val
+    return im_
 
 def cropout_random_patch(im, patch_size=(224, 224), border=(0, 0), fill_val=0):
     """
@@ -356,8 +357,9 @@ def cropout_random_patch(im, patch_size=(224, 224), border=(0, 0), fill_val=0):
     :return:      np.ndarray
     """
     (X0, Y0, X1, Y1) = get_random_patch_dims(im, patch_size, border)
-    im[Y0:Y1, X0:X1, ] = fill_val    
-    return im
+    im_ = im.copy()
+    im_[Y0:Y1, X0:X1, ] = fill_val    
+    return im_
 
 # modified from stackoverflow
 def largest_rotated_rect(w, h, angle):
