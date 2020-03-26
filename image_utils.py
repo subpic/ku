@@ -16,6 +16,7 @@ import PIL
 from PIL import Image
 import matplotlib.pyplot as plt
 from .generic import *
+from .image_augmenter import ImageAugmenter
 
 from keras.preprocessing.image import img_to_array, array_to_img, load_img
 
