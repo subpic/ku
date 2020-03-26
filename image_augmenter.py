@@ -103,17 +103,17 @@ class ImageAugmenter(object):
                                            patch_position = crop_pos)
         return self
 
-    def cropout(self, cropout_size, cropout_pos=None, fill_val=0):
+    def cropout(self, crop_size, crop_pos=None, fill_val=0):
         """
         Cropout a patch of self.image and replace it with `fill_val`. Relies on `cropout_patch`.
         
-        * cropout_size: dimensions of the cropout (pair of H x W)
-        * cropout_pos:  if None, then a random cropout is taken, otherwise the given `cropout_pos` position is used
-                        pair of relative coordinates: (0,0) = upper left corner, (1,1) = lower right corner
-        * fill_val:     value to fill the cropout with
-        :return:        self
+        * crop_size: dimensions of the cropout (pair of H x W)
+        * crop_pos:  if None, then a random cropout is taken, otherwise the given `crop_pos` position is used
+                     pair of relative coordinates: (0,0) = upper left corner, (1,1) = lower right corner
+        * fill_val:  value to fill the cropout with
+        :return:     self
         """
-        # equally cropout in both dimensions if only one number is provided
+        # size of the cropout is equal in both dimensions if only one number is provided
         if not isinstance(crop_size, (list, tuple)):
             crop_size = [crop_size, crop_size]
         # if using a ratio cropout, compute actual cropout size
@@ -121,19 +121,21 @@ class ImageAugmenter(object):
                      for c, dim in zip(crop_size, self.image.shape[:2])]
              
         if self.verbose:
-            print('image_size:', self.image.shape, 'cropout_size:', cropout_size, 'fill_val:', fill_val)
+            print('image_size:', self.image.shape, 'crop_size:', crop_size, 'fill_val:', fill_val)
 
-        if cropout_pos is None:
-            if cropout_size != self.image.shape[:2]:
+        if crop_pos is None:
+            if crop_size != self.image.shape[:2]:
                 border = (0, 0)
                 self.image = cropout_random_patch(self.image,
                                                   patch_size = crop_size,
-                                                  border     = border)
+                                                  border     = border,
+                                                  fill_val   = fill_val)
         else:
             if crop_size != self.image.shape[:2]:
                 self.image = cropout_patch(self.image,
                                            patch_size     = crop_size,
-                                           patch_position = crop_pos)
+                                           patch_position = crop_pos,
+                                           fill_val       = fill_val)
         return self
     
     def fliplr(self, do=None):
