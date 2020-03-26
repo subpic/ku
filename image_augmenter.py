@@ -16,8 +16,6 @@ import PIL
 from PIL import Image
 import matplotlib.pyplot as plt
 from .generic import *
-import .image_utils as iu
-
 
 class ImageAugmenter(object):
     """
@@ -128,14 +126,14 @@ class ImageAugmenter(object):
         if cropout_pos is None:
             if cropout_size != self.image.shape[:2]:
                 border = (0, 0)
-                self.image = iu.cropout_random_patch(self.image,
-                                                     patch_size = crop_size,
-                                                     border     = border)
+                self.image = cropout_random_patch(self.image,
+                                                  patch_size = crop_size,
+                                                  border     = border)
         else:
             if crop_size != self.image.shape[:2]:
-                self.image = iu.cropout_patch(self.image,
-                                              patch_size     = crop_size,
-                                              patch_position = crop_pos)
+                self.image = cropout_patch(self.image,
+                                           patch_size     = crop_size,
+                                           patch_position = crop_pos)
         return self
     
     def fliplr(self, do=None):
