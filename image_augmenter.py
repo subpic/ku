@@ -16,6 +16,7 @@ import PIL
 from PIL import Image
 import matplotlib.pyplot as plt
 from .generic import *
+import random
 
 class ImageAugmenter(object):
     """
@@ -41,18 +42,47 @@ class ImageAugmenter(object):
         self.image = image if not self._remap else mapmm(image)
         self.verbose = verbose
         
-    def augment(self, aug, **aug_params):
+    def augment_image(self, augs=None, seed=None, verbose=False):
         """
-        Augment an image by an augmentation function given in `aug` with augmentation parameters `aug_params`
-        
-        * aug:        string name of augmentation function (such as 'crop', or 'cropout').
-        * aug_params: augmentation parameters to be passed on to the augmentation function.
-        :return:      self
-        """
-        
-        getattr(self, aug)(**aug_params)
+        Augments an image by a given augmentation. If no augmentation is provided, 
+        a random agumentation is applied within reasonable parameters.
 
-        return self
+        * im:      np.ndarray of size H x W x C
+        * aug:     list of augmentations.
+                   if None, a random augmentation is applied,
+                   if list of length greater than 1, a random augmentation from the 
+                   list is applied, otherwise the given augmentation is applied.
+        * seed:    random seed used to generate the augmentation parameters.
+        * verbose: enable verbose prints
+        :return:   augmented image as np.ndarray of size H x W x C
+        """
+        augs_dict = {'crop':{'crop_size':(32,32), 'crop_pos':(0,0)},
+                     'cropout':{'crop_size':(32,32), 'crop_pos':(0,0) ,'fill_val':0.5},
+    #                  'gblur':{}
+                    }
+        if augs not in [None, False]:
+            # pick and perform random augmentation from given list
+            aug = random.choice(augs)
+            
+            if aug not in augs_dict.keys():
+                if verbose:
+                    print('provided augmentation "', str(aug[0]), '" not a valid augmentation.')
+                return im
+            
+            if verbose:
+                print('augmenting by using ', str(aug))
+            
+            aug_params = augs_dict[augs[0]]
+            return getattr(self, aug)(**aug_params).result
+ 
+        else:
+            # pick and perform random augmentation from possible augmentations
+            aug = random.choice(augs_dict.keys())
+            if verbose:
+                print('augmenting by using ', str(aug,))
+            
+            aug_params = augs_dict[augs[0]]
+            return getattr(self, aug)(**aug_params).result
     
     def rotate(self, angle, random=True):
         """

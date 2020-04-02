@@ -17,7 +17,6 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from .generic import *
 from .image_augmenter import ImageAugmenter
-import random
 
 from keras.preprocessing.image import img_to_array, array_to_img, load_img
 
@@ -66,54 +65,7 @@ def view_stack(ims, figsize=(20, 20), figshape=None,
                   vmax=vrange[1], **kwargs)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        
-def augment_image(im, augs=None, verbose=False):
-    """
-    Augments an image by a given augmentation. If no augmentation is provided, 
-    a random agumentation is applied within reasonable parameters.
-    
-    * im:      np.ndarray of size H x W x C
-    * aug:     list of augmentations.
-               if None, a random augmentation is applied,
-               if list of length greater than 1, a random augmentation from the 
-               list is applied, otherwise the given augmentation is applied.
-    * verbose: enable verbose prints
-    :return:   augmented image as np.ndarray of size H x W x C
-    """
-    augs_dict = {'crop':{'crop_size':(32,32), 'crop_pos':(0,0)},
-                 'cropout':{'crop_size':(32,32), 'crop_pos':(0,0) ,'fill_val':0.5},
-#                  'gblur':{}
-                }
-    if augs not in [None, False]:
-        if len(augs) > 1:
-            # pick random augmentation from given list and call 
-            # itself with particular augmentation
-            aug = random.choice(augs)
-            if verbose:
-                print('augmenting by using ', str(aug))
-            return augment_image(im, augs=(aug,))
-        if augs[0] in augs_dict.keys():
-            # perform particular augmentation
-            aug = augs[0]
-            # TODO: Add sensible (random) parameter selection
-            aug_params = augs_dict[augs[0]]
-            
-            return ImageAugmenter(im, remap=False).\
-                          augment(aug, **aug_params).result
-            
-        elif verbose:
-            print('provided augmentation "', str(aug[0]), '" not a valid augmentation.')
 
-    else:
-        # pick random augmentation
-        # call itself with particular augmentation
-        aug = random.choice(augs)
-        if verbose:
-            print('augmenting by using ', str(aug,))
-        return augment_image(im, augs=(aug))
-        
-    return im
-    
 def read_image(image_path, image_size=1):
     """
     Read image from disk
