@@ -16,6 +16,10 @@ Some of the key components of each file:
 
 **`image_utils.py`**:
 
+* various utility functions for manipulating images (read, write to HDF5, batch resize, view batch)
+
+**`image_augmenter.py`**:
+
 * `ImageAugmenter`: Create custom image augmentation functions for training Keras models.
 
 **`generic.py`**:
