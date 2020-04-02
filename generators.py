@@ -81,7 +81,8 @@ class DataGeneratorDisk(keras.utils.Sequence):
     def _read_data(self, ids_batch, accessor):        
         X = []
         if accessor:
-            assert isinstance(accessor, (tuple, list)) or callable(accessor), 'Generator inputs/outputs must be of type list, tuple, or function'
+            assert isinstance(accessor, (tuple, list)) or callable(accessor),\
+            'Generator inputs/outputs must be of type list, tuple, or function'
 
             if callable(accessor):
                 X = accessor(ids_batch)
@@ -99,31 +100,32 @@ class DataGeneratorDisk(keras.utils.Sequence):
     def _data_generation(self, ids_batch):
         """Generates image-stack + outputs containing batch_size samples"""
         params = self
-        np.random.seed(self.deterministic)        
+        np.random.seed(params.deterministic)        
         
         y = self._read_data(ids_batch, params.outputs)        
         X_list = self._read_data(ids_batch, params.inputs_df)
             
-        assert isinstance(params.inputs, (tuple, list)), 'Generator inputs/outputs must be of type list or tuple'
+        assert isinstance(params.inputs, (tuple, list)),\
+        'Generator inputs/outputs must be of type list or tuple'
 
         for input_name in params.inputs:
             data = []
             # read the data from disk into a list
             for i, row in ids_batch.iterrows():
-                file_name = row[input_name]
-                file_path = os.path.join(self.data_path, file_name)
-                if params.read_fn is None:                    
+                input_data = row[input_name]                
+                if params.read_fn is None:             
+                    file_path = os.path.join(params.data_path, input_data)
                     file_data = read_image(file_path)
                 else:
-                    file_data = params.read_fn(file_path)
+                    file_data = params.read_fn(input_data, params)
                 data.append(file_data)
 
             # if needed, process each image, and add to X_list (inputs list)
-            if self.process_fn not in [None, False]:
-                for args in self.process_args.get(input_name, [{}]):
+            if params.process_fn not in [None, False]:
+                for args in params.process_args.get(input_name, [{}]):
                     data_new = None
                     for i in range(len(data)):
-                        data_i = self.process_fn(data[i], **args)
+                        data_i = params.process_fn(data[i], **args)
                         if data_new is None:
                             data_new = np.zeros((len(data),)+data_i.shape,
                                                 dtype=np.float32)
@@ -198,7 +200,8 @@ class DataGeneratorHDF5(DataGeneratorDisk):
         y = self._read_data(ids_batch, params.outputs)
         X_list = self._read_data(ids_batch, params.inputs_df)
 
-        assert isinstance(params.inputs, (tuple, list)), 'Generator inputs/outputs must be of type list or tuple'
+        assert isinstance(params.inputs, (tuple, list)),\
+        'Generator inputs/outputs must be of type list or tuple'
         
         if params.data_path:
             with H5Helper(params.data_path, file_mode='r',

@@ -30,9 +30,14 @@ def test_init_DataGeneratorDisk():
     assert (np.all(g[0][1][0] == np.array([[1],[2]])))
     
 def test_read_fn_DataGeneratorDisk():
-    read_fn = lambda p: iu.resize_image(iu.read_image(p), (100,100))
-    g = gr.DataGeneratorDisk(ids, read_fn=read_fn,
-                             **gen_params)
+    import os
+    def read_fn(name, g):
+        # g is the parent generator object
+        # name is the image name read from the DataFrame
+        image_path = os.path.join(g.data_path, name)
+        return iu.resize_image(iu.read_image(image_path), (100,100))        
+        
+    g = gr.DataGeneratorDisk(ids, read_fn=read_fn, **gen_params)
     gen.get_sizes(g[0]) =='([array<2,100,100,3>], [array<2,1>])'
 
 def test_get_sizes():
