@@ -95,6 +95,7 @@ def augment_image(im, augs=None, verbose=False):
         if augs[0] in augs_dict.keys():
             # perform particular augmentation
             aug = augs[0]
+            # TODO: Add sensible (random) parameter selection
             aug_params = augs_dict[augs[0]]
             
             return ImageAugmenter(im, remap=False).\
