@@ -42,6 +42,14 @@ class ImageAugmenter(object):
         self.verbose = verbose
         
     def augment(self, aug, **aug_params):
+        """
+        Augment an image by an augmentation function given in `aug` with augmentation parameters `aug_params`
+        
+        * aug:        string name of augmentation function (such as 'crop', or 'cropout').
+        * aug_params: augmentation parameters to be passed on to the augmentation function.
+        :return:      self
+        """
+        
         getattr(self, aug)(**aug_params)
 
         return self
