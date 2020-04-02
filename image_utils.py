@@ -108,7 +108,7 @@ def augment_image(im, augs=None, verbose=False):
         # call itself with particular augmentation
         aug = random.choice(augs)
         if verbose:
-            print('augmenting by using ', str(aug,), ' (2)')
+            print('augmenting by using ', str(aug,))
         return augment_image(im, augs=(aug))
         
     return im
