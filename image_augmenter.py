@@ -41,6 +41,11 @@ class ImageAugmenter(object):
         self.image = image if not self._remap else mapmm(image)
         self.verbose = verbose
         
+    def augment(self, aug, **aug_params):
+        getattr(self, aug)(**aug_params)
+
+        return self
+    
     def rotate(self, angle, random=True):
         """
         Rotate self.image
