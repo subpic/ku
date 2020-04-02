@@ -42,14 +42,19 @@ def test_read_fn_DataGeneratorDisk():
 
 def test_process_args_DataGeneratorDisk():
     def preproc(im, arg):
-        return im.copy()+arg
+        return np.zeros(1) + arg
 
-    gen_params_local = gen_params.copy()    
+    gen_params_local = gen_params.copy()
     gen_params_local.process_fn = preproc
-    gen_params_local.process_args = {'filename': [{'arg':1}, {'arg':2}]}    
-    g = gr.DataGeneratorDisk(ids, **gen_params_local)
+    gen_params_local.process_args  = {'filename': 'filename_args'}
+    gen_params_local.batch_size = 4
+
+    ids_local = ids.copy()
+    ids_local['filename_args'] = range(len(ids_local))
+
+    g = gr.DataGeneratorDisk(ids_local, **gen_params_local)
     x = g[0][0]
-    assert np.all(x[0] + 1 == x[1])
+    assert np.array_equal(np.squeeze(x[0].T), np.arange(gen_params_local.batch_size))
 
     
 def test_get_sizes():

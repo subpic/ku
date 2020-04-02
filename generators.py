@@ -28,15 +28,16 @@ class DataGeneratorDisk(keras.utils.Sequence):
     * batch_size (int):       how many images to read at a time
     * shuffle (bool):         randomized reading order
     * process_fn (function):  function applied to each image as it is read
-    * read_fn (function):  function used to read data from a file (returns numpy.array)
-                           if None, image_utils.read_image() is used (default)
-    * deterministic (None, int):  random seed for shuffling order
-    * inputs (tuple of strings):  column names from `ids` containing image names
-    * inputs_df (strings tuple):  column names from `ids`, returns values from the DataFrame itself
-    * outputs (tuple of strings): column names from `ids`
+    * read_fn (function):     function used to read data from a file (returns numpy.array)
+                              if None, image_utils.read_image() is used (default)
+    * deterministic (None, int):     random seed for shuffling order
+    * inputs (tuple of strings):     column names from `ids` containing image names
+    * inputs_df (tuple of strings):  column names from `ids`, returns values from the DataFrame itself
+    * outputs (tuple of strings):    column names from `ids`
     * verbose (bool):             logging verbosity
     * fixed_batches (bool):       only return full batches, ignore the last incomplete batch if needed
-    * process_args (None, dict):  dictionary of arguments to pass to `process_fn`
+    * process_args (dictionary):  dict of corresponding `ids` columns for `inputs`
+                                  containing arguments to pass to `process_fn`
     """
     def __init__(self, ids, data_path, **args):
         params_defa = Munch(ids           = ids,   data_path = data_path,
@@ -46,15 +47,14 @@ class DataGeneratorDisk(keras.utils.Sequence):
                             deterministic = None,  inputs=('image_name',),
                             inputs_df     = None,  outputs       = ('MOS',), 
                             verbose       = False, fixed_batches = False,
-                            process_args  = None)
+                            process_args  = {})
         check_keys_exist(args, params_defa)
         params = updated_dict(params_defa, **args)  # update only existing
         params.deterministic = {True: 42, False: None}.\
                                get(params.deterministic,
                                    params.deterministic)
         params.process_args = params.process_args or {}
-        self.__dict__.update(**params)  # set all as self.<param>
-
+        self.__dict__.update(**params)  # set all as self.<param>        
         if self.verbose>1:
             print('Initialized DataGeneratorDisk')
         self.on_epoch_end()  # initialize indexes
@@ -100,7 +100,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
     def _data_generation(self, ids_batch):
         """Generates image-stack + outputs containing batch_size samples"""
         params = self
-        np.random.seed(params.deterministic)        
+        np.random.seed(params.deterministic)
         
         y = self._read_data(ids_batch, params.outputs)        
         X_list = self._read_data(ids_batch, params.inputs_df)
@@ -112,25 +112,28 @@ class DataGeneratorDisk(keras.utils.Sequence):
             data = []
             # read the data from disk into a list
             for i, row in ids_batch.iterrows():
-                input_data = row[input_name]                
-                if params.read_fn is None:             
+                input_data = row[input_name]
+                if params.read_fn is None:
                     file_path = os.path.join(params.data_path, input_data)
                     file_data = read_image(file_path)
                 else:
                     file_data = params.read_fn(input_data, params)
                 data.append(file_data)
 
+            # column name for the arguments to `process_fn`
+            args_name = params.process_args.get(input_name, None)
+            
             # if needed, process each image, and add to X_list (inputs list)
-            if params.process_fn not in [None, False]:
-                for args in params.process_args.get(input_name, [{}]):
-                    data_new = None
-                    for i in range(len(data)):
-                        data_i = params.process_fn(data[i], **args)
-                        if data_new is None:
-                            data_new = np.zeros((len(data),)+data_i.shape,
-                                                dtype=np.float32)
-                        data_new[i, ...] = data_i
-                    X_list.append(data_new)
+            if params.process_fn not in [None, False]:                
+                data_new = None
+                for i, row in ids_batch.iterrows():                    
+                    arg = [] if args_name is None else [row[args_name]]
+                    data_i = params.process_fn(data[i], *arg)
+                    if data_new is None:
+                        data_new = np.zeros((len(data),)+data_i.shape,
+                                            dtype=np.float32)
+                    data_new[i, ...] = data_i
+                X_list.append(data_new)
             else:
                 data_new = None
                 for i in range(len(data)):
