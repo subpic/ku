@@ -168,7 +168,8 @@ class DataGeneratorHDF5(DataGeneratorDisk):
     * outputs (strings tuple):   column names from `ids`, returns values from the DataFrame itself
     * verbose (bool):            logging verbosity
     * fixed_batches (bool):      only return full batches, ignore the last incomplete batch if needed
-    * process_args (dict):       dictionary of arguments to pass to `process_fn`
+    * process_args (dictionary): dict of corresponding `ids` columns for `inputs`
+                                 containing arguments to pass to `process_fn`
     * group_names (strings tuple): read only from specified groups, or from any if `group_names` is None
                                    `group_names` are randomly sampled from meta-groups
                                    i.e. when group_names = [[group_names_1], [group_names_2]]
@@ -230,17 +231,20 @@ class DataGeneratorHDF5(DataGeneratorDisk):
                         if data.dtype != np.float32:
                             data = data.astype(np.float32)
 
+                        # column name for the arguments to `process_fn`
+                        args_name = params.process_args.get(input_name, None)
+                    
                         # add to X_list
-                        if params.process_fn not in [None, False]:
-                            for args in params.process_args.get(input_name,[{}]):
-                                data_new = None
-                                for i in range(len(data)):
-                                    data_i = params.process_fn(data[i,...], **args)
-                                    if data_new is None:
-                                        data_new = np.zeros((len(data),)+data_i.shape,
-                                                            dtype=np.float32)
-                                    data_new[i,...] = data_i
-                                X_list.append(data_new)
+                        if params.process_fn not in [None, False]:                        
+                            data_new = None
+                            for i, row in ids_batch.iterrows():
+                                arg = [] if args_name is None else [row[args_name]]
+                                data_i = params.process_fn(data[i,...], *arg)
+                                if data_new is None:
+                                    data_new = np.zeros((len(data),)+data_i.shape,
+                                                       dtype=np.float32)
+                                data_new[i,...] = data_i
+                            X_list.append(data_new)
                         else:
                             X_list.append(data)
 

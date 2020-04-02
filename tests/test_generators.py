@@ -45,9 +45,9 @@ def test_process_args_DataGeneratorDisk():
         return np.zeros(1) + arg
 
     gen_params_local = gen_params.copy()
-    gen_params_local.process_fn = preproc
-    gen_params_local.process_args  = {'filename': 'filename_args'}
-    gen_params_local.batch_size = 4
+    gen_params_local.process_fn   = preproc
+    gen_params_local.process_args = {'filename': 'filename_args'}
+    gen_params_local.batch_size   = 4
 
     ids_local = ids.copy()
     ids_local['filename_args'] = range(len(ids_local))
