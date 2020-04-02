@@ -42,7 +42,7 @@ class ImageAugmenter(object):
         self.image = image if not self._remap else mapmm(image)
         self.verbose = verbose
         
-    def augment_image(self, augs=None, seed=None, verbose=False):
+    def augment_image(self, augs=None, aug_params=None, seed=None, verbose=False):
         """
         Augments an image by a given augmentation. If no augmentation is provided, 
         a random agumentation is applied within reasonable parameters.
@@ -53,11 +53,11 @@ class ImageAugmenter(object):
                    if list of length greater than 1, a random augmentation from the 
                    list is applied, otherwise the given augmentation is applied.
         * seed:    random seed used to generate the augmentation parameters.
-        * verbose: enable verbose prints
+        * verbose: enable verbose prints.
         :return:   augmented image as np.ndarray of size H x W x C
         """
-        augs_dict = {'crop':{'crop_size':(32,32), 'crop_pos':(0,0)},
-                     'cropout':{'crop_size':(32,32), 'crop_pos':(0,0) ,'fill_val':0.5},
+        augs_dict = {'crop':{'crop_size':(32,32)},
+                     'cropout':{'crop_size':(32,32)},
     #                  'gblur':{}
                     }
         if augs not in [None, False]:
@@ -66,23 +66,68 @@ class ImageAugmenter(object):
             
             if aug not in augs_dict.keys():
                 if verbose:
-                    print('provided augmentation "', str(aug[0]), '" not a valid augmentation.')
-                return im
+                    print('provided augmentation "', str(aug), '" not a valid augmentation.')
+                return self.image
             
+            if aug_params is None:
+                if verbose:
+                    print('aug_params is none, selecting random parameters for the', str(aug) ,'augmentation')
+                aug_params = self.select_augmentation_params(aug, seed=seed, verbose=verbose)
+
             if verbose:
-                print('augmenting by using ', str(aug))
+                print('augmenting by using', str(aug), 'with aug_params ', aug_params)
             
-            aug_params = augs_dict[augs[0]]
             return getattr(self, aug)(**aug_params).result
  
         else:
             # pick and perform random augmentation from possible augmentations
             aug = random.choice(augs_dict.keys())
-            if verbose:
-                print('augmenting by using ', str(aug,))
+            aug_params = self.select_augmentation_params(aug, seed=seed, verbose=verbose)
             
-            aug_params = augs_dict[augs[0]]
+            if verbose:
+                print('augmenting by using', str(aug), 'with aug_params ', aug_params)
             return getattr(self, aug)(**aug_params).result
+    
+    def select_augmentation_params(self, aug, seed=None, verbose=False):
+        """
+        Selects a set of augmentation parameters. If no seed is provided, a random set
+        of augmentation parameters within a reasonable parameter space is returned.
+        
+        * aug:     string representing the augmentation
+        * seed:    random seed used to generate the augmentation parameters.
+        * verbose: enable verbose prints.
+        :return:   dictionary of augmentation parameters.
+        """
+        
+        H, W, _ = self.image.shape
+        augs_params = {'crop': {'crop_size':[np.floor(H/2),H,np.floor(W/2),W],
+                                'crop_pos':[0.25,0.75,0.25,0.75]},
+                       'cropout': {'crop_size':[0,np.floor(H/2),0,np.floor(W/2)], 
+                                   'crop_pos':[0.25,0.75,0.25,0.75]},
+                      }
+        int_params = ['crop_size']
+        
+        if str(aug) in augs_params.keys():
+            aug_params = {}
+            if seed is not None:
+                random.seed(seed)
+            augs_params_list = augs_params[str(aug)]
+            for param in augs_params_list:
+                param_range = augs_params_list[param]
+                if param in int_params:
+                    aug_params[param] = [int(random.uniform(param_range[0], param_range[1])),
+                                         int(random.uniform(param_range[2], param_range[3]))]
+                else:
+                    aug_params[param] = [random.uniform(param_range[0], param_range[1]),
+                                         random.uniform(param_range[2], param_range[3])]
+                    
+            return aug_params
+                
+        elif verbose:
+            print('provided augmentation not in list of valid augmentations')
+            return None
+        
+        return aug_params
     
     def rotate(self, angle, random=True):
         """
@@ -146,7 +191,7 @@ class ImageAugmenter(object):
                                            patch_position = crop_pos)
         return self
 
-    def cropout(self, crop_size, crop_pos=None, fill_val=0):
+    def cropout(self, crop_size, crop_pos=None, fill_val=0.5):
         """
         Cropout a patch of self.image and replace it with `fill_val`. Relies on `cropout_patch`.
         
