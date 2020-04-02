@@ -40,6 +40,18 @@ def test_read_fn_DataGeneratorDisk():
     g = gr.DataGeneratorDisk(ids, read_fn=read_fn, **gen_params)
     gen.get_sizes(g[0]) =='([array<2,100,100,3>], [array<2,1>])'
 
+def test_process_args_DataGeneratorDisk():
+    def preproc(im, arg):
+        return im.copy()+arg
+
+    gen_params_local = gen_params.copy()    
+    gen_params_local.process_fn = preproc
+    gen_params_local.process_args = {'filename': [{'arg':1}, {'arg':2}]}    
+    g = gr.DataGeneratorDisk(ids, **gen_params_local)
+    x = g[0][0]
+    assert np.all(x[0] + 1 == x[1])
+
+    
 def test_get_sizes():
     x = np.array([[1,2,3]])
     assert gen.get_sizes(([x.T],1,[4,5])) == '([array<3,1>], <1>, [<1>, <1>])'
