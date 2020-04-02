@@ -120,6 +120,32 @@ def test_DataGeneratorHDF5():
     g.outputs = [['score'],['score']]
     assert gen.get_sizes(g[0]) == '([], [array<2,1>, array<2,1>])'
     
+def test_process_args_DataGeneratorHDF5():
+    def preproc(im, *arg):
+        if arg:
+            return np.zeros(im.shape) + arg
+        else:
+            return im
+
+    gen_params_local = gen_params.copy()
+    gen_params_local.update(process_fn = preproc,
+                            data_path = 'data.h5', 
+                            inputs    = ['filename', 'filename1'],
+                            process_args = {'filename' :'args'},
+                            batch_size = 4,
+                            shuffle    = False)
+
+    ids_local = ids.copy()
+    ids_local['filename1'] = ids_local['filename']
+    ids_local['args'] = range(len(ids_local))
+    ids_local['args1'] = range(len(ids_local),0,-1)
+
+    g = gr.DataGeneratorHDF5(ids_local, **gen_params_local)
+
+    assert np.array_equal(np.squeeze(g[0][0][0]), np.arange(4))
+    assert np.array_equal(np.squeeze(g[0][0][1]), np.arange(1,5))
+    assert np.array_equal(np.squeeze(g[0][1]), np.arange(1,5))
+    
 def test_DataGeneratorHDF5_callable_outputs():
     d = {'features': [1, 2, 3, 4, 5],
          'mask': [1, 0, 1, 1, 0]}
