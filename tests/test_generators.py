@@ -174,3 +174,18 @@ def test_multi_return_proc_fn_DataGeneratorDisk():
         
     assert np.array_equal(g[0][0][0], g[0][0][1]-1)
     assert np.array_equal(g[0][1][0], np.array([[1],[2]]))
+    
+def test_multi_return_and_read_fn_DataGeneratorDisk():    
+    def read_fn(*args):
+        g = args[1]
+        score = np.float32(g.ids[g.ids.filename==args[0]].score)
+        return np.ones((3,3)) * score
+
+    gen_params_local = gen_params.copy()
+    gen_params_local.batch_size = 3
+    gen_params_local.read_fn = read_fn
+    gen_params_local.process_fn = lambda im: [im, im+1]
+
+    g = gr.DataGeneratorDisk(ids, **gen_params_local)
+    assert np.array_equal(g[0][0][0], g[0][0][1]-1)
+    assert np.array_equal(g[0][0][1][0,...], np.ones((3,3))*2.)

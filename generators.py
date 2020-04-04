@@ -232,10 +232,10 @@ class DataGeneratorHDF5(DataGeneratorDisk):
                             data = h.read_data(names, group_names=[group_name])[0]
                         if data.dtype != np.float32:
                             data = data.astype(np.float32)
-
+                        
                         # column name for the arguments to `process_fn`
                         args_name = params.process_args.get(input_name, None)
-                    
+                        
                         # add to X_list
                         if params.process_fn not in [None, False]:                        
                             data_new = None
