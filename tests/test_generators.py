@@ -146,7 +146,7 @@ def test_process_args_DataGeneratorHDF5():
     assert np.array_equal(np.squeeze(g[0][0][1]), np.arange(1,5))
     assert np.array_equal(np.squeeze(g[0][1]), np.arange(1,5))
     
-def test_DataGeneratorHDF5_callable_outputs():
+def test_callable_outputs_DataGeneratorHDF5():
     d = {'features': [1, 2, 3, 4, 5],
          'mask': [1, 0, 1, 1, 0]}
     df = pd.DataFrame(data=d)
@@ -154,14 +154,23 @@ def test_DataGeneratorHDF5_callable_outputs():
     def filter_features(df):
         return np.array(df.loc[df['mask']==1,['features']])
 
-    gen_params.update(data_path = None, 
-                      outputs   = filter_features,
-                      inputs    = [],
-                      inputs_df = ['features'],
-                      shuffle   = False,
-                      batch_size= 5)
+    gen_params_local = gen_params.copy()
+    gen_params_local.update(data_path = None, 
+                            outputs   = filter_features,
+                            inputs    = [],
+                            inputs_df = ['features'],
+                            shuffle   = False,
+                            batch_size= 5)
 
-    g = gr.DataGeneratorHDF5(df, **gen_params)
+    g = gr.DataGeneratorHDF5(df, **gen_params_local)
     assert gen.get_sizes(g[0]) == '([array<5,1>], array<3,1>)'
     assert all(np.squeeze(g[0][0]) == np.arange(1,6))
     assert all(np.squeeze(g[0][1]) == [1,3,4])
+    
+def test_multi_return_proc_fn_DataGeneratorDisk():
+    gen_params_local = gen_params.copy()
+    gen_params_local.process_fn = lambda im: [im, im+1]
+    g = gr.DataGeneratorDisk(ids.copy(), **gen_params_local)
+        
+    assert np.array_equal(g[0][0][0], g[0][0][1]-1)
+    assert np.array_equal(g[0][1][0], np.array([[1],[2]]))

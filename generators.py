@@ -125,23 +125,25 @@ class DataGeneratorDisk(keras.utils.Sequence):
             
             # if needed, process each image, and add to X_list (inputs list)
             if params.process_fn not in [None, False]:                
-                data_new = None
+                data_list = []
                 for i, row in ids_batch.iterrows():                    
                     arg = [] if args_name is None else [row[args_name]]
                     data_i = params.process_fn(data[i], *arg)
-                    if data_new is None:
-                        data_new = np.zeros((len(data),)+data_i.shape,
-                                            dtype=np.float32)
-                    data_new[i, ...] = data_i
-                X_list.append(data_new)
+                    data_list.append(force_list(data_i))
+                    
+                # transpose list, sublists become batches
+                data_list = zip(*data_list)
+                
+                # for each sublist of arrays
+                data_arrays = []
+                for batch_list in data_list:
+                    batch_arr = np.float32(np.stack(batch_list))
+                    data_arrays.append(batch_arr)
+                
+                X_list.extend(data_arrays)
             else:
-                data_new = None
-                for i in range(len(data)):
-                    if data_new is None:
-                        data_new = np.zeros((len(data),)+data[i].shape,
-                                            dtype=np.float32)
-                    data_new[i, ...] = data[i]
-                X_list.append(data_new)
+                data_array = np.float32(np.stack(data))
+                X_list.append(data_array)
 
         np.random.seed(None)
         return (X_list, y)
