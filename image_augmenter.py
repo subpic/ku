@@ -117,7 +117,7 @@ class ImageAugmenter(object):
         if not isinstance(crop_size, (list, tuple)):
             crop_size = [crop_size, crop_size]
         # if using a ratio cropout, compute actual cropout size
-        crop_size = [np.int32(c*dim) if 0 < c <= (1+1e-6) else c\
+        crop_size = [np.int32(c*dim) if isinstance(c, float) and (0 < c) and (c <= 1.) else c\
                      for c, dim in zip(crop_size, self.image.shape[:2])]
              
         if self.verbose:
@@ -288,7 +288,6 @@ def get_random_patch_dims(im, patch_size, border):
     * im:         np.ndarray of size H x W x C
     * patch_size: 2-tuple of patch H x W
     * border:     2-tuple of border H x W
-                  (0,0) = upper left corner, (1,1) = lower right corner
     :return:      tuple of (upper left corner X coordinate, 
                             upper left corner Y coordinate,
                             lower right corner X coordinate,
@@ -309,8 +308,8 @@ def get_random_patch_dims(im, patch_size, border):
         X_min = old_div((W - W_crop), 2)
         X_max = X_min
     
-    Y0 = int(rand(1)*(Y_max-Y_min) + Y_min)
-    X0 = int(rand(1)*(X_max-X_min) + X_min)  
+    Y0 = int(round(rand(1)*(Y_max-Y_min) + Y_min))
+    X0 = int(round(rand(1)*(X_max-X_min) + X_min))
     
     return (X0, Y0, X0+W_crop, Y0+H_crop)
 
