@@ -184,8 +184,8 @@ def test_multi_return_and_read_fn_DataGeneratorDisk():
     gen_params_local = gen_params.copy()
     gen_params_local.batch_size = 3
     gen_params_local.read_fn = read_fn
-    gen_params_local.process_fn = lambda im: [im, im+1]
+    gen_params_local.process_fn = lambda im: [im+1, im+2]
 
     g = gr.DataGeneratorDisk(ids, **gen_params_local)
     assert np.array_equal(g[0][0][0], g[0][0][1]-1)
-    assert np.array_equal(g[0][0][1][0,...], np.ones((3,3))*2.)
+    assert np.array_equal(g[0][0][1][0,...], np.ones((3,3))*3.)
