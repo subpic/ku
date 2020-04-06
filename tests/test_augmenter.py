@@ -31,3 +31,17 @@ def test_flip():
 
     assert np.array_equal(aug.ImageAugmenter(m).fliplr().result, m)
     assert np.array_equal(aug.ImageAugmenter(ml).fliplr().result, mr)
+
+def test_cropout_fills_image():
+    ''' 
+    Tests if by repeatedly cropping out patches, the whole image gets filled in with the `fill_val`=1.
+    Tries to crop with different sizes.
+    '''
+    m = np.zeros((5,5,3))
+
+    # fills with cropout_dim x cropout_dim
+    for cropout_dim in range(1,5):
+        a = aug.ImageAugmenter(m, remap=False)
+        for i in range(1000):
+            a.cropout((cropout_dim,cropout_dim), fill_val=1)
+        assert np.array_equal(a.result, np.ones((5,5,3)))
