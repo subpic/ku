@@ -13,6 +13,7 @@ from sklearn.model_selection import train_test_split
 
 if sys.version_info.major == 2:        
     input = raw_input
+    from imp import reload
 else:
     from importlib import reload
 
