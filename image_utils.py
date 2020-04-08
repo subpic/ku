@@ -26,6 +26,8 @@ def imv(im, remap=True, **kwargs):
     """
     im_ = np.squeeze(im)
     if remap: im_ = mapmm(im_)
+    if len(im_.shape)<3 or im_.shape[2]==1:
+        kwargs.setdefault('cmap','gray')
     plt.imshow(im_, **kwargs);
     plt.axis('off');
     
