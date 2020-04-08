@@ -214,7 +214,7 @@ class ImageAugmenter(object):
                 target_height = frame_height
                 target_width = frame_height * aspect_image
 
-            target_width, target_height = int(round(target_width)), int(round(target_height))
+            target_width, target_height = int(np.round(target_width)), int(np.round(target_height))
 
             self.image = transform.resize(self.image, (target_height, target_width), 
                                           preserve_range=True)
@@ -308,8 +308,8 @@ def get_random_patch_dims(im, patch_size, border):
         X_min = old_div((W - W_crop), 2)
         X_max = X_min
     
-    Y0 = int(round(rand(1)*(Y_max-Y_min) + Y_min))
-    X0 = int(round(rand(1)*(X_max-X_min) + X_min))
+    Y0 = int(np.round(rand(1)*(Y_max-Y_min) + Y_min))
+    X0 = int(np.round(rand(1)*(X_max-X_min) + X_min))
     
     return (X0, Y0, X0+W_crop, Y0+H_crop)
 
