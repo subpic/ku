@@ -20,6 +20,15 @@ from .image_augmenter import ImageAugmenter
 
 from keras.preprocessing.image import img_to_array, array_to_img, load_img
 
+def imv(im, remap=True, **kwargs):
+    """
+    Display an image.
+    """
+    im_ = np.squeeze(im)
+    if remap: im_ = mapmm(im_)
+    plt.imshow(im_, **kwargs);
+    plt.axis('off');
+    
 def view_stack(ims, figsize=(20, 20), figshape=None, 
                cmap='gray', vrange='all', **kwargs):
     """
@@ -65,7 +74,7 @@ def view_stack(ims, figsize=(20, 20), figshape=None,
                   vmax=vrange[1], **kwargs)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-    
+        
 def read_image(image_path, image_size=1):
     """
     Read image from disk
