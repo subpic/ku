@@ -1,16 +1,14 @@
 from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
-from builtins import zip
-from builtins import map
-from builtins import range
+from builtins import zip, map, range
 from past.utils import old_div
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from functools import reduce
 from .model_helper import *
 
-import keras
+import keras, sys
 from keras.utils import plot_model
 from keras.layers import *
 from keras.applications.inception_v3 import InceptionV3
@@ -19,6 +17,11 @@ from keras.applications.resnet50 import ResNet50
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.applications.vgg16 import VGG16
 from keras.applications.nasnet import NASNetMobile
+
+if sys.version_info.major==3:
+    tf = K.tensorflow_backend.tf
+else:
+    tf = K.tf
 
 source_module = {
                  InceptionV3:       keras.applications.inception_v3,
@@ -70,7 +73,7 @@ def fc_layers(input_layer,
     """
     x = input_layer
     if l2_norm_inputs:
-        x = Lambda(lambda x: K.tf.nn.l2_normalize(x, 1))(input_layer)
+        x = Lambda(lambda x: tf.nn.l2_normalize(x, 1))(input_layer)
 
     assert dropout_rates is None or (len(fc_sizes) == len(dropout_rates)),\
            'Each FC layer should have a corresponding dropout rate'
@@ -249,7 +252,7 @@ def model_inception_pooled(input_shape=(None, None, 3), indexes=list(range(11)),
                              input_shape = input_shape)
     print('Creating multi-pooled model')
     
-    ImageResizer = Lambda(lambda x: K.tf.image.resize_area(x, pool_size),
+    ImageResizer = Lambda(lambda x: tf.image.resize_area(x, pool_size),
                           name='feature_resizer')
 
     feature_layers = [model_base.get_layer('mixed%d' % i) for i in indexes]
@@ -285,7 +288,7 @@ def model_inceptionresnet_pooled(input_shape=(None, None, 3), indexes=list(range
                                    input_shape = input_shape)
     print('Creating multi-pooled model')
     
-    ImageResizer = Lambda(lambda x: K.tf.image.resize_area(x, pool_size),
+    ImageResizer = Lambda(lambda x: tf.image.resize_area(x, pool_size),
                           name='feature_resizer') 
 
     feature_layers = [l for l in model_base.layers if 'mixed' in l.name]
