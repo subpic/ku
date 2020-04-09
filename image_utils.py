@@ -20,10 +20,11 @@ from .image_augmenter import ImageAugmenter
 
 from keras.preprocessing.image import img_to_array, array_to_img, load_img
 
-def imv(im, remap=True, **kwargs):
+def imv(im, remap=True, figsize=None, **kwargs):
     """
     Display an image.
     """
+    plt.figure(figsize=figsize)
     im_ = np.squeeze(im)
     if remap: im_ = mapmm(im_)
     if len(im_.shape)<3 or im_.shape[2]==1:
