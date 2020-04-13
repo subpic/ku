@@ -111,8 +111,8 @@ class DataGeneratorDisk(keras.utils.Sequence):
         for input_name in params.inputs:
             data = []
             # read the data from disk into a list
-            for i, row in ids_batch.iterrows():
-                input_data = row[input_name]
+            for row in ids_batch.itertuples():
+                input_data = getattr(row, input_name)
                 if params.read_fn is None:
                     file_path = os.path.join(params.data_path, input_data)
                     file_data = read_image(file_path)
@@ -126,8 +126,8 @@ class DataGeneratorDisk(keras.utils.Sequence):
             # if needed, process each image, and add to X_list (inputs list)
             if params.process_fn not in [None, False]:                
                 data_list = []
-                for i, row in ids_batch.iterrows():                    
-                    arg = [] if args_name is None else [row[args_name]]
+                for i, row in enumerate(ids_batch.itertuples()):                    
+                    arg = [] if args_name is None else [getattr(row, args_name)]
                     data_i = params.process_fn(data[i], *arg)
                     data_list.append(force_list(data_i))
                     
@@ -239,8 +239,8 @@ class DataGeneratorHDF5(DataGeneratorDisk):
                         # add to X_list
                         if params.process_fn not in [None, False]:                        
                             data_new = None
-                            for i, row in ids_batch.iterrows():
-                                arg = [] if args_name is None else [row[args_name]]
+                            for i, row in enumerate(ids_batch.itertuples()):
+                                arg = [] if args_name is None else [getattr(row,args_name)]
                                 data_i = params.process_fn(data[i,...], *arg)
                                 if data_new is None:
                                     data_new = np.zeros((len(data),)+data_i.shape,
