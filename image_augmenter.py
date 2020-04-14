@@ -12,7 +12,7 @@ import scipy.ndimage.interpolation
 import skimage.transform as transform
 from numpy import interp
 from numpy.random import rand
-import PIL
+import PIL, random
 from PIL import Image
 import matplotlib.pyplot as plt
 from .generic import *
@@ -395,3 +395,59 @@ def largest_rotated_rect(w, h, angle):
         bb_h - 2 * y
     )
 
+# shuffle tiled images
+
+def image_to_tiles(im, num_patches):
+    """
+    Cut an image `im` into equal sized patches.
+    
+    * im: input image
+    * num_patches: (num_vertical, num_horizontal)
+    """
+    H, W = im.shape[:2]    
+    H_count, W_count = num_patches
+    patch_H, patch_W = int(H / H_count), int(W / W_count)
+    tiles = [im[x:x+patch_H,y:y+patch_W] for x in range(0,H,patch_H) 
+                                         for y in range(0,W,patch_W)]
+    return tiles
+
+def tiles_to_image(tiles, num_patches):
+    """
+    Reconstruct an image from tiles, resulting from `image_to_tiles`.
+    
+    * tiles: list of image patches
+    * num_patches: (num_vertical, num_horizontal)
+    """
+    H_count, W_count = num_patches
+    rows = [np.concatenate(row_list, axis=1) for row_list in chunks(tiles, W_count)]
+    return np.concatenate(rows)
+
+def imshuffle(im, num_patches):
+    """
+    Cut image into patches, shuffle and return the shuffled reconstructed image.
+    Uses `image_to_tiles` and `tiles_to_image`.
+    
+    * im: input image
+    * num_patches: (num_vertical, num_horizontal)
+    """
+    t = image_to_tiles(im, num_patches)
+    random.shuffle(t)
+    return tiles_to_image(t, num_patches)
+
+def imshuffle_pair(im1, im2, num_patches, ratio=0.5):
+    """
+    Scramble patches coming from two images into a single image.
+    Similar to `imshuffle`, but the patches come from images `im1` and `im2`. 
+    
+    * im1, im2: input images, of equal size
+    * num_patches: (num_vertical, num_horizontal) patches to divide each image in
+    * ratio: fraction of patches to take from `im1`, the rest are taken from `im2`
+    """
+    t1 = image_to_tiles(im1, num_patches)
+    t2 = image_to_tiles(im2, num_patches)
+    random.shuffle(t1)
+    random.shuffle(t2)
+    counts = np.int32(len(t1)*ratio)    
+    t12 = t1[:counts] + t2[counts:]
+    random.shuffle(t12)
+    return tiles_to_image(t12, num_patches)
