@@ -45,3 +45,17 @@ def test_cropout_fills_image():
         for i in range(1000):
             a.cropout((cropout_dim,cropout_dim), fill_val=1)
         assert np.array_equal(a.result, np.ones((5,5,3)))
+
+def test_imshuffle():
+    m = np.ones((4,4))
+    assert np.array_equal(aug.imshuffle(m, [2,2]), np.ones((4,4)))
+
+    m[:,0] = 0
+    assert np.sum(aug.imshuffle(m, [4,4])==0)==4
+    assert np.array_equal(aug.imshuffle(m, [1,1]), m)
+
+    m = np.zeros((2,2))
+    m[0,0] = 1
+    for _ in range(1000):
+        assert np.sum(aug.imshuffle_pair(m, m, [2,2]))<=2
+        assert np.sum(aug.imshuffle_pair(m, 1-m, [2,2]))>=1
