@@ -447,7 +447,7 @@ def imshuffle_pair(im1, im2, num_patches, ratio=0.5):
     t2 = image_to_tiles(im2, num_patches)
     random.shuffle(t1)
     random.shuffle(t2)
-    counts = np.int32(len(t1)*ratio)    
+    counts = np.int32(np.round(len(t1)*ratio))
     t12 = t1[:counts] + t2[counts:]
     random.shuffle(t12)
     return tiles_to_image(t12, num_patches)
