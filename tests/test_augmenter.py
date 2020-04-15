@@ -59,3 +59,11 @@ def test_imshuffle():
     for _ in range(1000):
         assert np.sum(aug.imshuffle_pair(m, m, [2,2]))<=2
         assert np.sum(aug.imshuffle_pair(m, 1-m, [2,2]))>=1
+        
+def test_imshuffle_pair_ratio():
+    m1 = np.ones((4,4))
+    m2 = np.zeros((4,4))
+
+    for _ in range(1000):
+        for ratio in [0,0.25,0.5,0.75,1]:
+            assert np.sum(aug.imshuffle_pair(m1, m2, [4,4], ratio)) == ratio*16
