@@ -470,7 +470,7 @@ class ModelHelper(object):
             return True
 
     def save_model(self, weights_only=False, model=None, 
-                   name_extras='', best=True, verbose=1):
+                   name_extras='', best=False, verbose=1):
         """
         Save model to HDF5 file.
 
