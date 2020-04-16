@@ -434,7 +434,7 @@ def imshuffle(im, num_patches):
     random.shuffle(t)
     return tiles_to_image(t, num_patches)
 
-def imshuffle_pair(im1, im2, num_patches, ratio=0.5):
+def imshuffle_pair(im1, im2, num_patches, ratio=0.5, flip=False):
     """
     Scramble patches coming from two images into a single image.
     Similar to `imshuffle`, but the patches come from images `im1` and `im2`. 
@@ -449,5 +449,9 @@ def imshuffle_pair(im1, im2, num_patches, ratio=0.5):
     random.shuffle(t2)
     counts = np.int32(np.round(len(t1)*ratio))
     t12 = t1[:counts] + t2[counts:]
-    random.shuffle(t12)
+    random.shuffle(t12)    
+    if flip:
+        for i, _ in enumerate(t12):
+            if rand(1) > 0.5: 
+                t12[i] = np.fliplr(t12[i])
     return tiles_to_image(t12, num_patches)
