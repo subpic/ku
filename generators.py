@@ -40,14 +40,14 @@ class DataGeneratorDisk(keras.utils.Sequence):
                                   containing arguments to pass to `process_fn`
     """
     def __init__(self, ids, data_path, **args):
-        params_defa = Munch(ids           = ids,   data_path = data_path,
-                            batch_size    = 32,    shuffle = True,
+        params_defa = Munch(ids           = ids,   data_path= data_path,
+                            batch_size    = 32,    shuffle  = True,
                             input_shape   = (224, 224, 3), 
-                            process_fn    = None,  read_fn = None,
-                            deterministic = None,  inputs=('image_name',),
-                            inputs_df     = None,  outputs       = ('MOS',), 
+                            process_fn    = None,  read_fn  = None,
+                            deterministic = None,  inputs   =('image_name',),
+                            inputs_df     = None,  outputs  = ('MOS',), 
                             verbose       = False, fixed_batches = False,
-                            process_args  = {})
+                            process_args  = {},    group_by = None)
         check_keys_exist(args, params_defa)
         params = updated_dict(params_defa, **args)  # update only existing
         params.deterministic = {True: 42, False: None}.\
@@ -60,24 +60,52 @@ class DataGeneratorDisk(keras.utils.Sequence):
         self.on_epoch_end()  # initialize indexes
 
     def __len__(self):
-        """Denotes the number of batches per epoch accounting for `fixed_batches`"""
-        round_op = np.floor if self.fixed_batches else np.ceil
-        return int(round_op(len(self.ids)*1. / self.batch_size))
+        """Get the number of batches per epoch"""
+        if not self.group_by:
+            round_op = np.floor if self.fixed_batches else np.ceil
+            return int(round_op(len(self.ids)*1. / self.batch_size))
+        else:
+            return int(self.ids_index.batch_index.max()+1)
 
     def __getitem__(self, index):
-        """Generate one batch of data"""
-        indexes_batch = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
-        ids_batch = self.ids.iloc[indexes_batch].reset_index(drop=True)
+        """Generate a batch of data"""
         if self.verbose:
             if index%10==0: print('.', end='')
+
+        ids_batch = self.ids[self.ids_index.batch_index==index]
         return self._data_generation(ids_batch)
 
     def on_epoch_end(self):
-        """Updates indexes after each epoch"""
-        self.indexes = np.arange(len(self.ids))
-        if self.shuffle:
-            np.random.shuffle(self.indexes)
+        """Updates batch selection after each epoch"""        
+        
+        if self.group_by:
+            group_dict = dict(group_by=self.ids[self.group_by])
+        else: 
+            group_dict = None
+            
+        self.ids_index = pd.DataFrame(group_dict, 
+                                      index=self.ids.index.copy())
+        self.ids_index['batch_index'] = np.nan
+        
+        # initialize batch indexes
+        index = 0
+        selectable = self.ids_index.batch_index.isnull()
+        while selectable.sum():
+            ids_sel = self.ids_index[selectable]
+            if self.group_by:
+                group_by_value = ids_sel.group_by.sample(1).values[0]
+                ids_sel = ids_sel[ids_sel.group_by==group_by_value]
 
+            batch_size_max = min(self.batch_size, len(ids_sel))
+            if self.shuffle:
+                ids_batch = ids_sel.sample(batch_size_max)
+            else:
+                ids_batch = ids_sel.iloc[:batch_size_max]
+
+            self.ids_index.loc[ids_batch.index, 'batch_index'] = index
+            index += 1
+            selectable = self.ids_index.batch_index.isnull()
+        
     def _read_data(self, ids_batch, accessor):        
         X = []
         if accessor:
@@ -183,7 +211,7 @@ class DataGeneratorHDF5(DataGeneratorDisk):
                             inputs_df   = None,  outputs       = ('MOS',),  memory_mapped = False,
                             verbose     = False, fixed_batches = False,     random_group  = False,
                             process_fn  = None,  process_args  = None,      group_names   = None,
-                            input_shape = None)
+                            input_shape = None,  group_by      = None)
 
         check_keys_exist(args, params_defa)
         params = updated_dict(params_defa, **args) # update only existing       
