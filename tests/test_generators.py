@@ -189,3 +189,40 @@ def test_multi_return_and_read_fn_DataGeneratorDisk():
     g = gr.DataGeneratorDisk(ids, **gen_params_local)
     assert np.array_equal(g[0][0][0], g[0][0][1]-1)
     assert np.array_equal(g[0][0][1][0,...], np.ones((3,3))*3.)
+    
+def test_generator_len_with_group_by_DataGeneratorDisk():
+    size = 10
+    ids_defa = pd.read_csv(u'ids.csv', encoding='latin-1')
+    fnames = np.concatenate([ids_defa.filename.values]*3)[:size]
+    ids  = pd.DataFrame(dict(cats  = ['cat{}'.format(i) for i in range(size)],
+                            dogs  = ['dog{}'.format(i) for i in range(size)],
+                            image_name = fnames,
+                            group = [i//4 for i in range(10)]))
+
+    gen_params = Munch(batch_size    = 1,
+                       inputs        = ['image_name'],
+                       outputs       = ['dogs'],
+                       data_path     = 'images',
+                       group_by      = 'group',
+                       shuffle       = False,
+                       fixed_batches = True)
+
+    for batch_size, len_g in zip(range(1, 5), [10, 5, 5, 3]):
+        gen_params.batch_size = batch_size
+        g = gr.DataGeneratorDisk(ids, **gen_params)
+        assert len(g)==len_g
+        a = g.ids_index.groupby('batch_index').group_by.mean().values
+        b = g.ids_index.groupby('batch_index').group_by.last().values
+        assert np.array_equal(a, b)
+
+    gen_params.group_by = None
+    for batch_size, len_g in zip(range(1, 5), [10, 5, 3, 2]):
+        gen_params.batch_size = batch_size
+        g = gr.DataGeneratorDisk(ids, **gen_params)
+        assert len(g)==len_g
+
+    gen_params.fixed_batches = False
+    for batch_size, len_g in zip(range(1, 5), [10, 5, 4, 3]):
+        gen_params.batch_size = batch_size
+        g = gr.DataGeneratorDisk(ids, **gen_params)
+        assert len(g)==len_g
