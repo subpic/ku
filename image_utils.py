@@ -140,7 +140,7 @@ def resize_image(x, size):
             x = mapmm(x, (minx, maxx))
     return x
 
-def glob_images(image_path, verbose = True, image_types =\
+def glob_images(image_path, verbose=False, split=False, image_types =\
                 ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')):
 
     # index all `image_types` in source path
@@ -148,12 +148,17 @@ def glob_images(image_path, verbose = True, image_types =\
     for imtype in image_types:
         pattern = os.path.join(image_path, imtype)
         file_list.extend(glob.glob(pattern))
+                
     if verbose:
         print('\nFound', len(file_list), 'images')
-    return file_list
+
+    if split:
+        return list(zip(*[os.path.split(impath) for impath in file_list]))   
+    else:
+        return file_list
 
 def resize_folder(path_src, path_dst, image_size_dst=None,
-                  over_write=False, format_dst='jpg', 
+                  overwrite=False, format_dst='jpg', 
                   process_fn=None, jpeg_quality=95):
     """
     Resize an image folder, copying the resized images to a new destination folder.
@@ -162,7 +167,7 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
     * path_dst:       destination folder path, created if does not exist
     * image_size_dst: destination image size
                       if None, convert the images to the new format only
-    * over_write:     enable to over-write destination images
+    * overwrite:     enable to over-write destination images
     * format_dst:     format type, defaults to 'jpg'
     * process_fn:     apply custom processing function before resizing (optional) and saving
     * jpeg_quality:   quality level if saving as a JPEG image
@@ -175,8 +180,7 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
     
     errors = []
     for i, file_path_src in enumerate(file_list):
-        if i % (old_div(len(file_list),20)+1) == 0: print(' ',i,end=' ')
-        elif i % (old_div(len(file_list),1000)+1) == 0: print('.',end='')
+        show_progress(i, len(file_list), 50)
 
         try:            
             file_name = os.path.split(file_path_src)[1]
@@ -186,7 +190,7 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
             file_path_dst = os.path.join(path_dst, file_name_dst)
 
             # check that image hasn't been already processed
-            if over_write or not os.path.isfile(file_path_dst): 
+            if overwrite or not os.path.isfile(file_path_dst): 
                 im = Image.open(file_path_src)
                 if process_fn is not None:
                     im = process_fn(im)
@@ -224,9 +228,8 @@ def check_images(image_dir, image_types =\
     image_names_err = []
     image_names_all = []
     for (i, file_path) in enumerate(file_list):
-        if i % (old_div(len(file_list),20)+1) == 0: print(' ',i,end=' ')
-        elif i % (old_div(len(file_list),1000)+1) == 0: print('.',end='')
-
+        show_progress(i, len(file_list), 50)
+        
         try:            
             file_dir, file_name = os.path.split(file_path)
             file_body, file_ext = os.path.splitext(file_name)
@@ -243,7 +246,7 @@ def save_images_to_h5(image_path, h5_path, overwrite=False,
 
     * image_path: path to the source image folder
     * h5_path:    path to the destination HDF5 file; created if does not exist
-    * over_write: true/false
+    * overwrite: true/false
     * batch_size: number of images to read at a time
     * image_size_dst: new size of images, if not None
     """
@@ -260,3 +263,71 @@ def save_images_to_h5(image_path, h5_path, overwrite=False,
             image_names = [str(os.path.basename(path)) for path in batch]
             images = read_image_batch(batch, image_size=image_size_dst)
             h.write_data(images, dataset_names=image_names)            
+
+            
+def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
+                   overwrite=False, verbose=True):
+    """
+    Augment an image folder, copying the augmented versions of the images to a new destination folder 
+    and returning a pd.DataFrame containing augmentation paths and parameters, and error images
+
+    * path_src: source folder path
+    * path_dst: destination folder path, created if does not exist
+    * process_gen: generator returning `process_fn(im)` function to use 
+                   for each augmentation and a dictionary of arguments applied
+    * format_dst: format type, defaults to 'jpg'
+    * overwrite: enable to over-write destination images
+    :return: (ids type pd.DataFrame, list of error image names)
+    """
+    
+    file_list = glob_images(path_src, verbose=verbose)    
+    make_dirs(path_dst)
+    if verbose:
+        print('Augmenting images from "{}" to "{}"'.format(path_src, path_dst))
+
+    errors = []
+    ids_list = []
+
+    for process_fn, args in process_gen():
+        if args:
+            args_str = ', '.join(['{}:{}'.format(*a) for a in args.items()])
+            if verbose:
+                print('Augmentation args "{}"'.format(args_str), end=' ')
+        else:
+            args_str = ''
+
+        for i, file_path_src in enumerate(file_list):
+            if verbose:
+                show_progress(i, len(file_list), 10)
+
+            try:
+                im = img_to_array(load_img(file_path_src))
+
+                file_name = os.path.split(file_path_src)[1]
+                (file_body, file_ext) = os.path.splitext(file_name)
+                file_name_dst = '{}/{}.{}'.format(args_str, file_body, format_dst.lower())
+                file_path_dst = os.path.join(path_dst, file_name_dst)
+
+                # check if image has already been processed
+                if overwrite or not os.path.isfile(file_path_dst): 
+                    imx = array_to_img(process_fn(im))
+
+                    make_dirs(file_path_dst)
+                    if format_dst.lower() in ('jpg', 'jpeg'):
+                        imx.save(file_path_dst, 'JPEG', quality=95)
+                    else:
+                        imx.save(file_path_dst, format_dst.upper())
+
+                row_entry = dict(image_name   = file_name,
+                                 image_path   = file_name_dst)    
+                row_entry.update({k:str(v) for k,v in args.items()})
+                ids_list.append(pd.DataFrame(row_entry,index=[i]))
+
+            except Exception as e:
+                if verbose:
+                    print('\nError processing:', file_name)
+                    print('Exception:', e)
+                errors.append(file_name)
+
+    ids_aug = pd.concat(ids_list, ignore_index=True)
+    return ids_aug, errors

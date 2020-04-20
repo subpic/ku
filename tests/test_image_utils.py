@@ -3,6 +3,7 @@ from __future__ import absolute_import
 
 from ku import generic as gen
 from ku import image_utils as iu
+from ku import image_augmenter as aug
 from ku import generators as gr
 
 from munch import Munch
@@ -13,7 +14,7 @@ def test_basic_resize_check_save_h5():
     
     # resize
     iu.resize_folder('images/', 'images_temp/',
-                     image_size_dst=(50,50), over_write=True)
+                     image_size_dst=(50,50), overwrite=True)
     image_list = iu.glob_images('images_temp', verbose=False)
     assert image_list
     ims = iu.read_image_batch(image_list)
@@ -33,3 +34,28 @@ def test_basic_resize_check_save_h5():
     # clean-up
     shutil.rmtree('images_temp')
     os.unlink('images.h5')
+    
+    
+def test_augment_folder():
+    
+    path_src='images/'
+    path_dst='images_aug/'
+
+    def process_gen():
+        for num_patch in [(i,j) for i in [1,2,4,8] for j in [1,2,4,8]]:
+            fn = lambda im: aug.imshuffle(im, num_patch)
+            yield fn, dict(num_patch=num_patch)
+
+    ids_aug, errors = iu.augment_folder(path_src, path_dst, 
+                                        process_gen, verbose=True)
+
+    assert len(errors)==0
+    assert len(ids_aug)==64
+
+    (image_path, ext) = os.path.split(ids_aug.iloc[0,:].image_path)
+    _, file_names = iu.glob_images('{}{}/'.format(path_dst,image_path), split=True)
+
+    first_group_names = list(ids_aug.groupby('num_patch'))[0][1].image_name
+    assert sorted(first_group_names) == sorted(file_names)
+
+    shutil.rmtree(path_dst)
