@@ -140,7 +140,7 @@ def resize_image(x, size):
             x = mapmm(x, (minx, maxx))
     return x
 
-def get_image_list(image_path, verbose = True,
+def glob_images(image_path, verbose = True,
                   image_types = ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG'))
     
     # index all `image_types` in source path
@@ -168,7 +168,7 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
     :return:          list of file names that triggered an error during read/resize/write
     """
     
-    file_list = get_image_list(path_src)
+    file_list = glob_images(path_src)
     make_dirs(path_dst)
     print('Resizing images from', path_src, 'to', path_dst)
     
@@ -219,7 +219,7 @@ def check_images(image_dir, image_types =\
                    ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')
     :return:       tuple of (list of failed image names, list of all image names)
     """    
-    file_list = get_image_list(image_dir, image_types)
+    file_list = glob_images(image_dir, image_types)
     image_names_err = []
     image_names_all = []
     for (i, file_path) in enumerate(file_list):
