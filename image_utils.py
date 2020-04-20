@@ -140,16 +140,16 @@ def resize_image(x, size):
             x = mapmm(x, (minx, maxx))
     return x
 
-def glob_images(image_path, verbose = True,
-                  image_types = ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG'))
-    
+def glob_images(image_path, verbose = True, image_types =\
+                ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')):
+
     # index all `image_types` in source path
     file_list = []
     for imtype in image_types:
         pattern = os.path.join(image_path, imtype)
-        file_list.extend(glob.glob(pattern))        
+        file_list.extend(glob.glob(pattern))
     if verbose:
-        print('Found', len(file_list), 'images')
+        print('\nFound', len(file_list), 'images')
     return file_list
 
 def resize_folder(path_src, path_dst, image_size_dst=None,
@@ -160,7 +160,8 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
 
     * path_src:       source folder path
     * path_dst:       destination folder path, created if does not exist
-    * image_size_dst: optionally resize the images
+    * image_size_dst: destination image size
+                      if None, convert the images to the new format only
     * over_write:     enable to over-write destination images
     * format_dst:     format type, defaults to 'jpg'
     * process_fn:     apply custom processing function before resizing (optional) and saving
@@ -170,12 +171,12 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
     
     file_list = glob_images(path_src)
     make_dirs(path_dst)
-    print('Resizing images from', path_src, 'to', path_dst)
+    print('Resizing images from "{}" to "{}"'.format(path_src, path_dst))
     
     errors = []
-    for (i, file_path_src) in enumerate(file_list):
-        if i % (old_div(len(file_list),20)) == 0: print(' ',i,end=' ')
-        elif i % (old_div(len(file_list),1000)) == 0: print('.',end='')
+    for i, file_path_src in enumerate(file_list):
+        if i % (old_div(len(file_list),20)+1) == 0: print(' ',i,end=' ')
+        elif i % (old_div(len(file_list),1000)+1) == 0: print('.',end='')
 
         try:            
             file_name = os.path.split(file_path_src)[1]
@@ -204,13 +205,13 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
         
         except Exception as e:
             print('Error saving', file_name)
-            print('Exception:', e.message)
+            print('Exception:', e)
             errors.append(file_name)
             
     return errors
 
 def check_images(image_dir, image_types =\
-                    ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')):
+                 ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')):
     """
     Check which images from `image_dir` fail to read.
 
@@ -223,8 +224,8 @@ def check_images(image_dir, image_types =\
     image_names_err = []
     image_names_all = []
     for (i, file_path) in enumerate(file_list):
-        if i % (old_div(len(file_list),20)) == 0: print(' ',i,end=' ')
-        elif i % (old_div(len(file_list),1000)) == 0: print('.',end='')
+        if i % (old_div(len(file_list),20)+1) == 0: print(' ',i,end=' ')
+        elif i % (old_div(len(file_list),1000)+1) == 0: print('.',end='')
 
         try:            
             file_dir, file_name = os.path.split(file_path)
@@ -235,7 +236,7 @@ def check_images(image_dir, image_types =\
             image_names_err.append(file_name)            
     return (image_names_err, image_names_all)
 
-def save_images_to_h5(image_path, h5_path, over_write=False,
+def save_images_to_h5(image_path, h5_path, overwrite=False,
                       batch_size=32, image_size_dst=None):
     """
     Save a folder of JPEGs to an HDF5 file. Uses `read_image_batch` and `H5Helper`.
@@ -246,12 +247,13 @@ def save_images_to_h5(image_path, h5_path, over_write=False,
     * batch_size: number of images to read at a time
     * image_size_dst: new size of images, if not None
     """
-    file_list = glob.glob(os.path.join(image_path, '*.jpg'))
-    print('Found', len(file_list), 'JPG images')  
+    file_list = glob_images(image_path, ['*.jpg'])
+#     file_list = glob.glob(os.path.join(image_path, '*.jpg'))
+#     print('Found', len(file_list), 'JPG images')  
     make_dirs(h5_path)
-    print('Saving images from', image_path, 'to', h5_path)
+    print('Saving images from "{}" to "{}"'.format(image_path, h5_path))
     
-    with H5Helper(h5_path, over_write=over_write) as h:
+    with H5Helper(h5_path, overwrite=overwrite) as h:
         for i, batch in enumerate(chunks(file_list, batch_size)):
             if i % 10 == 0:
                 print(i*batch_size, end=' ')
