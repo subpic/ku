@@ -73,8 +73,8 @@ def view_stack(ims, figsize=(20, 20), figshape=None,
         ax = fig.add_subplot(rows, cols, i+1)
         if isinstance(ims, list): im = ims[i]
         else:                     im = np.squeeze(ims[i, ...])            
-        ax.imshow(im, cmap=cmap, vmin=vrange[0], 
-                  vmax=vrange[1], **kwargs)
+        ax.imshow(im, cmap=cmap, 
+                  vmin=vrange[0], vmax=vrange[1], **kwargs)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         
@@ -140,6 +140,18 @@ def resize_image(x, size):
             x = mapmm(x, (minx, maxx))
     return x
 
+def get_image_list(image_path, verbose = True,
+                  image_types = ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG'))
+    
+    # index all `image_types` in source path
+    file_list = []
+    for imtype in image_types:
+        pattern = os.path.join(image_path, imtype)
+        file_list.extend(glob.glob(pattern))        
+    if verbose:
+        print('Found', len(file_list), 'images')
+    return file_list
+
 def resize_folder(path_src, path_dst, image_size_dst=None,
                   over_write=False, format_dst='jpg', 
                   process_fn=None, jpeg_quality=95):
@@ -156,18 +168,8 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
     :return:          list of file names that triggered an error during read/resize/write
     """
     
-    image_types = ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')
-    # index all `image_types` in source path
-    file_list = []
-    for imtype in image_types:
-        pattern = os.path.join(path_src, imtype)
-        file_list.extend(glob.glob(pattern))
-    print('Found', len(file_list), 'images')
-    
-    try:
-        os.makedirs(path_dst)
-    except: pass
-
+    file_list = get_image_list(path_src)
+    make_dirs(path_dst)
     print('Resizing images from', path_src, 'to', path_dst)
     
     errors = []
@@ -217,13 +219,7 @@ def check_images(image_dir, image_types =\
                    ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')
     :return:       tuple of (list of failed image names, list of all image names)
     """    
-    # index all `image_types` in source path
-    file_list = []
-    for imtype in image_types:
-        pattern = os.path.join(image_dir, imtype)
-        file_list.extend(glob.glob(pattern))
-    print('Found', len(file_list), 'images')
-        
+    file_list = get_image_list(image_dir, image_types)
     image_names_err = []
     image_names_all = []
     for (i, file_path) in enumerate(file_list):
@@ -250,7 +246,6 @@ def save_images_to_h5(image_path, h5_path, over_write=False,
     * batch_size: number of images to read at a time
     * image_size_dst: new size of images, if not None
     """
-
     file_list = glob.glob(os.path.join(image_path, '*.jpg'))
     print('Found', len(file_list), 'JPG images')  
     make_dirs(h5_path)
