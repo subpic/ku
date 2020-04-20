@@ -266,7 +266,7 @@ def save_images_to_h5(image_path, h5_path, overwrite=False,
 
             
 def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
-                   overwrite=False, verbose=True):
+                   overwrite=False, verbose=True, simulate=False):
     """
     Augment an image folder, copying the augmented versions of the images to a new destination folder 
     and returning a pd.DataFrame containing augmentation paths and parameters, and error images
@@ -277,11 +277,14 @@ def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
                    for each augmentation and a dictionary of arguments applied
     * format_dst: format type, defaults to 'jpg'
     * overwrite: enable to over-write destination images
+    * verbose: display status information
+    * simulate: generated ids pd.DataFrame, do not process/save images
     :return: (ids type pd.DataFrame, list of error image names)
     """
     
     file_list = glob_images(path_src, verbose=verbose)    
-    make_dirs(path_dst)
+    if not simulate:
+        make_dirs(path_dst)
     if verbose:
         print('Augmenting images from "{}" to "{}"'.format(path_src, path_dst))
 
@@ -301,33 +304,33 @@ def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
                 show_progress(i, len(file_list), 10)
 
             try:
-                im = img_to_array(load_img(file_path_src))
-
                 file_name = os.path.split(file_path_src)[1]
                 (file_body, file_ext) = os.path.splitext(file_name)
                 file_name_dst = '{}/{}.{}'.format(args_str, file_body, format_dst.lower())
                 file_path_dst = os.path.join(path_dst, file_name_dst)
 
-                # check if image has already been processed
-                if overwrite or not os.path.isfile(file_path_dst): 
-                    imx = array_to_img(process_fn(im))
+                if not simulate:
+                    im = img_to_array(load_img(file_path_src))
 
-                    make_dirs(file_path_dst)
-                    if format_dst.lower() in ('jpg', 'jpeg'):
-                        imx.save(file_path_dst, 'JPEG', quality=95)
-                    else:
-                        imx.save(file_path_dst, format_dst.upper())
+                    # check if image has already been processed
+                    if overwrite or not os.path.isfile(file_path_dst): 
+                        imx = array_to_img(process_fn(im))
 
-                row_entry = dict(image_name   = file_name,
-                                 image_path   = file_name_dst)    
-                row_entry.update({k:str(v) for k,v in args.items()})
-                ids_list.append(pd.DataFrame(row_entry,index=[i]))
+                        make_dirs(file_path_dst)
+                        if format_dst.lower() in ('jpg', 'jpeg'):
+                            imx.save(file_path_dst, 'JPEG', quality=95)
+                        else:
+                            imx.save(file_path_dst, format_dst.upper())
 
+                row_entry = [file_name, file_name_dst] + list(args.values())
+                ids_list.append(row_entry)
+                
             except Exception as e:
                 if verbose:
                     print('\nError processing:', file_name)
                     print('Exception:', e)
                 errors.append(file_name)
 
-    ids_aug = pd.concat(ids_list, ignore_index=True)
+    ids_aug = pd.DataFrame(ids_list, 
+                           columns=['image_name','image_path']+list(args.keys()))
     return ids_aug, errors
