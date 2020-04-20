@@ -467,3 +467,10 @@ def array_overlap(a, b):
     inds_a = (sort_right_b-sort_left_b > 0).nonzero()[0]
 
     return ia[inds_a], ib[inds_b]
+
+def show_progress(count, total, num_markers=10, marker='.',end='\n'):
+    progress_value = max(np.int32(total/num_markers), 1)
+    if count % progress_value == 0: 
+        print(marker,end='')
+    if count==total-1:
+        print(end=end)
