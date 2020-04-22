@@ -11,7 +11,7 @@ import os, scipy, h5py, time, sys
 from munch import Munch
 from sklearn.model_selection import train_test_split
 
-if sys.version_info.major == 2:        
+if sys.version_info.major == 2:
     input = raw_input
     from imp import reload
 else:
@@ -73,7 +73,7 @@ class H5Helper(object):
         * group_names:   None, or list of strings
         """
         with self._lock:            
-            assert isinstance(dataset_names, (list, pd.core.series.Series)), "`dataset_names` is of type {} and should be `list` or `pandas.core.series.Series`".format(type(dataset_names))
+            assert isinstance(dataset_names, list), "`dataset_names` is of type {} and should be `list`".format(type(dataset_names))
                    
             hf = self.hf
             if group_names is None:
@@ -113,7 +113,7 @@ class H5Helper(object):
         """
         with self._lock:
             hf = self.hf
-            assert isinstance(dataset_names, (list, pd.core.series.Series))
+            assert isinstance(dataset_names, list), "`dataset_names` is of type {} and should be `list`".format(type(dataset_names))
             if group_names is None:
                 return self._read_datasets(hf, dataset_names)
             else:
