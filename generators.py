@@ -38,6 +38,11 @@ class DataGeneratorDisk(keras.utils.Sequence):
     * fixed_batches (bool):       only return full batches, ignore the last incomplete batch if needed
     * process_args (dictionary):  dict of corresponding `ids` columns for `inputs`
                                   containing arguments to pass to `process_fn`
+    * group_names (strings tuple): read only from specified sub-paths (groups), or from any if `group_names` is None
+                                   `group_names` are randomly sampled from meta-groups
+                                   i.e. when group_names = [[group_names_1], [group_names_2]]
+    * random_group (bool): read inputs from a random group for every image
+                                  
     """
     def __init__(self, ids, data_path, **args):
         params_defa = Munch(ids           = ids,   data_path= data_path,
@@ -47,6 +52,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
                             deterministic = None,  inputs   =('image_name',),
                             inputs_df     = None,  outputs  = ('MOS',), 
                             verbose       = False, fixed_batches = False,
+                            random_group  = False, group_names   = None,
                             process_args  = {},    group_by = None)
         check_keys_exist(args, params_defa)
         params = updated_dict(params_defa, **args)  # update only existing
@@ -54,6 +60,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
                                get(params.deterministic,
                                    params.deterministic)
         params.process_args = params.process_args or {}
+        params.group_names   = params.group_names or ['']
         self.__dict__.update(**params)  # set all as self.<param>        
         if self.verbose>1:
             print('Initialized DataGeneratorDisk')
@@ -136,42 +143,51 @@ class DataGeneratorDisk(keras.utils.Sequence):
         assert isinstance(params.inputs, (tuple, list)),\
         'Generator inputs/outputs must be of type list or tuple'
 
-        for input_name in params.inputs:
-            data = []
-            # read the data from disk into a list
-            for row in ids_batch.itertuples():
-                input_data = getattr(row, input_name)
-                if params.read_fn is None:
-                    file_path = os.path.join(params.data_path, input_data)
-                    file_data = read_image(file_path)
-                else:
-                    file_data = params.read_fn(input_data, params)
-                data.append(file_data)
+        # group_names are randomly sampled from meta-groups 
+        # i.e. when group_names = [[group_names1], [group_names2]]
+        group_names = params.group_names
+        if isinstance(group_names[0], (list, tuple)):
+            idx = np.random.randint(0, len(group_names))
+            group_names = group_names[idx]
 
-            # column name for the arguments to `process_fn`
-            args_name = params.process_args.get(input_name, None)
-            
-            # if needed, process each image, and add to X_list (inputs list)
-            if params.process_fn not in [None, False]:                
-                data_list = []
-                for i, row in enumerate(ids_batch.itertuples()):                    
-                    arg = [] if args_name is None else [getattr(row, args_name)]
-                    data_i = params.process_fn(data[i], *arg)
-                    data_list.append(force_list(data_i))
-                    
-                # transpose list, sublists become batches
-                data_list = zip(*data_list)
-                
-                # for each sublist of arrays
-                data_arrays = []
-                for batch_list in data_list:
-                    batch_arr = np.float32(np.stack(batch_list))
-                    data_arrays.append(batch_arr)
-                
-                X_list.extend(data_arrays)
-            else:
-                data_array = np.float32(np.stack(data))
-                X_list.append(data_array)
+        # get data for each input and add it to X_list
+        for group_name in group_names:
+            for input_name in params.inputs:
+                data = []
+                # read the data from disk into a list
+                for row in ids_batch.itertuples():
+                    input_data = group_name + getattr(row, input_name)
+                    if params.read_fn is None:
+                        file_path = os.path.join(params.data_path, input_data)
+                        file_data = read_image(file_path)
+                    else:
+                        file_data = params.read_fn(input_data, params)
+                    data.append(file_data)
+
+                # column name for the arguments to `process_fn`
+                args_name = params.process_args.get(input_name, None)
+
+                # if needed, process each image, and add to X_list (inputs list)
+                if params.process_fn not in [None, False]:                
+                    data_list = []
+                    for i, row in enumerate(ids_batch.itertuples()):                    
+                        arg = [] if args_name is None else [getattr(row, args_name)]
+                        data_i = params.process_fn(data[i], *arg)
+                        data_list.append(force_list(data_i))
+
+                    # transpose list, sublists become batches
+                    data_list = zip(*data_list)
+
+                    # for each sublist of arrays
+                    data_arrays = []
+                    for batch_list in data_list:
+                        batch_arr = np.float32(np.stack(batch_list))
+                        data_arrays.append(batch_arr)
+
+                    X_list.extend(data_arrays)
+                else:
+                    data_array = np.float32(np.stack(data))
+                    X_list.append(data_array)
 
         np.random.seed(None)
         return (X_list, y)

@@ -5,7 +5,7 @@ from ku import generic as gen
 from ku import image_utils as iu
 from munch import Munch
 import pandas as pd, numpy as np
-import pytest
+import pytest, shutil
 
 gen_params = Munch(batch_size    = 2,
                    data_path     = 'images',
@@ -226,3 +226,28 @@ def test_generator_len_with_group_by_DataGeneratorDisk():
         gen_params.batch_size = batch_size
         g = gr.DataGeneratorDisk(ids, **gen_params)
         assert len(g)==len_g
+
+def test_group_names_DataGeneratorDisk():
+    
+    iu.resize_folder('images/', 'images1/', image_size_dst=(100,100), overwrite=True)
+
+    gp = gen_params.copy()
+    gp.inputs = ['filename']
+    gp.group_names = ['images/']
+    gp.data_path   = ''
+    g = gr.DataGeneratorDisk(ids, **gp)
+    assert gen.get_sizes(g[0]) == '([array<2,224,224,3>], [array<2,1>])'
+
+    gp.group_names = ['images/', 'images1/']
+    g = gr.DataGeneratorDisk(ids, **gp)
+    assert gen.get_sizes(g[0]) == '([array<2,224,224,3>, array<2,100,100,3>], [array<2,1>])'
+
+    gp.group_names = [['images/'], ['images1/']]
+    sizes = []
+    for i in range(100):
+        g = gr.DataGeneratorDisk(ids, **gp)
+        sizes.append(g[0][0][0].shape[1])
+
+    assert np.unique(sizes).shape[0]>1
+
+    shutil.rmtree('images1/')
