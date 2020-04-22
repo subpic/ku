@@ -47,7 +47,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
     def __init__(self, ids, data_path, **args):
         params_defa = Munch(ids           = ids,   data_path= data_path,
                             batch_size    = 32,    shuffle  = True,
-                            input_shape   = (224, 224, 3), 
+                            input_shape   = None, 
                             process_fn    = None,  read_fn  = None,
                             deterministic = None,  inputs   =('image_name',),
                             inputs_df     = None,  outputs  = ('MOS',), 
@@ -77,14 +77,14 @@ class DataGeneratorDisk(keras.utils.Sequence):
     def __getitem__(self, index):
         """Generate a batch of data"""
         if self.verbose:
-            if index%10==0: print('.', end='')
+            show_progress(index, len(self))
 
         ids_batch = self.ids[self.ids_index.batch_index==index]
         return self._data_generation(ids_batch)
 
     def on_epoch_end(self):
         """Updates batch selection after each epoch"""        
-        
+                
         if self.group_by:
             group_dict = dict(group_by=self.ids[self.group_by])
         else: 
@@ -100,12 +100,14 @@ class DataGeneratorDisk(keras.utils.Sequence):
         while selectable.sum():
             ids_sel = self.ids_index[selectable]
             if self.group_by:
-                group_by_value = ids_sel.group_by.sample(1).values[0]
+                group_by_value = ids_sel.group_by.sample(1,
+                        random_state=self.deterministic).values[0]
                 ids_sel = ids_sel[ids_sel.group_by==group_by_value]
 
             batch_size_max = min(self.batch_size, len(ids_sel))
             if self.shuffle:
-                ids_batch = ids_sel.sample(batch_size_max)
+                ids_batch = ids_sel.sample(batch_size_max, 
+                                           random_state=self.deterministic)
             else:
                 ids_batch = ids_sel.iloc[:batch_size_max]
 
