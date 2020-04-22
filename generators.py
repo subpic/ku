@@ -85,11 +85,11 @@ class DataGeneratorDisk(keras.utils.Sequence):
             
         self.ids_index = pd.DataFrame(group_dict, 
                                       index=self.ids.index.copy())
-        self.ids_index['batch_index'] = np.nan
+        self.ids_index['batch_index'] = -1
         
-        # initialize batch indexes
+        # initialize batch indexes        
         index = 0
-        selectable = self.ids_index.batch_index.isnull()
+        selectable = self.ids_index.batch_index == -1        
         while selectable.sum():
             ids_sel = self.ids_index[selectable]
             if self.group_by:
@@ -104,7 +104,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
 
             self.ids_index.loc[ids_batch.index, 'batch_index'] = index
             index += 1
-            selectable = self.ids_index.batch_index.isnull()
+            selectable = self.ids_index.batch_index == -1
         
     def _read_data(self, ids_batch, accessor):        
         X = []
@@ -251,7 +251,7 @@ class DataGeneratorHDF5(DataGeneratorDisk):
                 for group_name in group_names:
                     for input_name in params.inputs:
                         # get data
-                        names = ids_batch.loc[:,input_name]
+                        names = list(ids_batch.loc[:,input_name])
                         if params.random_group:
                             data = h.read_data_random_group(names)
                         elif group_name is None:
