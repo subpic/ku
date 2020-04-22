@@ -56,11 +56,10 @@ class H5Helper(object):
     def _write_datasets(self, writer, data, dataset_names):
         # internal to the class
         for i in range(len(data)):
-            if self.verbose and i % 10000 == 0:
-                print(i, end=' ')
+            if self.verbose:
+                show_progress(i, len(data), num_markers=5,
+                              marker='{} '.format(i), end='done\n')
             writer.create_dataset(dataset_names[i], data=data[i, ...])
-        if self.verbose: 
-            print(len(data), 'done')
 
     def write_data(self, data, dataset_names, group_names=None):
         """
@@ -96,11 +95,10 @@ class H5Helper(object):
                         dtype=data0.dtype)
         data[0,...] = data0
         for i in range(1, len(dataset_names)):
-            if self.verbose and i % 10000 == 0:
-                print(i, end=' ')
+            if self.verbose:
+                show_progress(i, len(dataset_names), num_markers=5,
+                              marker='{} '.format(i), end='done\n')
             data[i, ...] = reader[dataset_names[i]][...]
-        if self.verbose:
-            print(len(dataset_names), 'done')
         return data
   
     def read_data(self, dataset_names, group_names=None):
@@ -468,7 +466,7 @@ def array_overlap(a, b):
 
     return ia[inds_a], ib[inds_b]
 
-def show_progress(count, total, num_markers=10, marker='.',end='\n'):
+def show_progress(count, total, num_markers=50, marker='.',end='\n'):
     progress_value = max(np.int32(total/num_markers), 1)
     if count % progress_value == 0: 
         print(marker,end='')
