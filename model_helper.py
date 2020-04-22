@@ -57,14 +57,13 @@ class ModelHelper(object):
         workers        = 5,        #
         max_queue_size = 10,       #
         monitor_metric      = 'val_mean_absolute_error',  # monitoring params
-        monitor_mode        = 'min',                      #
-        early_stop_patience = 20,                         #
-        checkpoint_period   = 1,                          #
-        save_best_only = True,                            #
+        monitor_mode        = 'min',         
+        early_stop_patience = 20,            
+        checkpoint_period   = 1,             
+        save_best_only = True,               
         optimizer      = optimizers.Adam(),  # optimizer object
         write_graph    = False,              # TensorBoard params
         write_images   = False,              #
-        histogram_freq = 0,                  #
         logs_root      = 'logs/',            # TensorBoard logs
         models_root    = 'models/',          # saved models path
         features_root  = 'features/',        # saved features path (by `save_activations`)
@@ -88,7 +87,7 @@ class ModelHelper(object):
                             class_weights  = None,     # class weights for unbalanced classes
 
                             multiproc      = True,     # multi-processing params
-                            workers        = 5,        #
+                            workers        = 2,        #
                             max_queue_size = 10,       #
 
                             monitor_metric      = 'val_mean_absolute_error',  # monitoring params
@@ -96,18 +95,15 @@ class ModelHelper(object):
                             early_stop_patience = 20,                         #
                             checkpoint_period   = 1,                          #
                             save_best_only = True,                            #
+                            
                             optimizer      = optimizers.Adam(),  # optimizer object, its parameters
                                                                  # can changed during runtime
-
                             write_graph    = False,              # TensorBoard params
                             write_images   = False,              #
-                            histogram_freq = 0,                  #
-
-                            logs_root      = 'logs/',         # TensorBoard logs
-                            models_root    = 'models/',       # saved models path
-                            features_root  = 'features/',     # saved features path (by `save_activations`)
-                            gen_class      = None                # generator class
-                                                                 # inferred from self.gen_params.data_path
+                            logs_root      = 'logs/',            # TensorBoard logs
+                            models_root    = 'models/',          # saved models path
+                            features_root  = 'features/',        # saved features path (by `save_activations`)
+                            gen_class      = None                # generator class inferred from self.gen_params.data_path
                             )
 
         for key in list(params.keys()):
@@ -188,10 +184,13 @@ class ModelHelper(object):
                                        period   = p.checkpoint_period,
                                        save_best_only    = p.save_best_only,
                                        save_weights_only = True)
-        earlystop = EarlyStopping(monitor=p.monitor_metric, 
-                                  patience=p.early_stop_patience, 
-                                  mode=p.monitor_mode)
+        
+        earlystop = EarlyStopping(monitor  = p.monitor_metric, 
+                                  patience = p.early_stop_patience, 
+                                  mode     = p.monitor_mode)
+        
         return [tb_callback, earlystop, checkpointer]
+
 
     def _updated_gen_params(self, **kwargs):
         # private method
