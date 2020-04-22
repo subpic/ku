@@ -132,7 +132,7 @@ class ModelHelper(object):
         h = self
         tostr = lambda x: str(x) if x is not None else '?'
         format_size = lambda x: '[{}]'.format(','.join(map(tostr, x)))
-        loss2str = lambda x: (x if isinstance(x, (str, bytes)) else x.__name__)[:8]
+        loss2str = lambda x: (x if isinstance(x, (str, bytes)) else x.__name__)[:9]
 
         loss = h.params.loss        
         if not isinstance(loss, dict):
@@ -158,24 +158,18 @@ class ModelHelper(object):
     
     def callbacks(self):
         """Setup callbacks"""
+        
         p = self.params
-        log_dir = os.path.join(self.params.logs_root, self.model_name())
-        if p.histogram_freq:
-            valid_gen = self.make_generator(self.ids[self.ids.set=='validation'], 
-                                            deterministic=True, fixed_batches=True)
-            tb_callback = TensorBoardWrapper(valid_gen, log_dir=log_dir, 
-                                      write_images=p.write_images, 
-                                      histogram_freq=p.histogram_freq, 
-                                      write_graph=p.write_graph)
-        else:
-            tb_callback = TensorBoard(log_dir=log_dir,
-                                      write_graph=p.write_graph, 
-                                      histogram_freq=0, 
-                                      write_images=p.write_images)
+        log_dir = os.path.join(p.logs_root, self.model_name())
+        tb_callback = TensorBoard(log_dir        = log_dir,
+                                  write_graph    = p.write_graph, 
+                                  histogram_freq = 0,
+                                  write_images   = p.write_images)
         
         tb_callback.set_model(self.model)
+        
 #        separator = self.model_name._ShortNameBuilder__sep[1]
-        best_model_path = os.path.join(self.params.models_root, 
+        best_model_path = os.path.join(p.models_root, 
                                        self.model_name() + '_best_weights.h5')
         make_dirs(best_model_path)
         checkpointer = ModelCheckpoint(filepath = best_model_path, verbose=0,
@@ -223,14 +217,14 @@ class ModelHelper(object):
         :return: (generated_batch, generator_instance)
         """
         if not isinstance(input_idx, (list, tuple)):
-            ids_gen = self.ids[input_idx:input_idx+1]
+            ids_gen = self.ids.iloc[input_idx:input_idx+1]
         else:
-            ids_gen = self.ids[input_idx[0]:input_idx[1]]
+            ids_gen = self.ids.iloc[input_idx[0]:input_idx[1]]
 
         gen = self.make_generator(ids_gen)
         x = gen[0]  # generated data
-        print_sizes(x)
-        return x, gen
+        print('generator[0]:'); print_sizes(x)
+        return x
 
     def set_multi_gpu(self, gpus=None):
         """
@@ -402,7 +396,7 @@ class ModelHelper(object):
             preds.append(y_pred)
         return preds[0] if repeats == 1 else preds
     
-    def validate(self, valid_gen=True, verbose=1, 
+    def validate(self, valid_gen=True, verbose=2, 
                  batch_size=32, recompile=True):
         if valid_gen is True:
             ids = self.ids
@@ -412,8 +406,7 @@ class ModelHelper(object):
         print('Validating performance')
         if recompile: self.compile()
 
-        if issubclass(type(valid_gen), 
-                      keras.utils.Sequence): 
+        if issubclass(type(valid_gen), keras.utils.Sequence): 
             r = self.model.evaluate_generator(valid_gen, 
                                               verbose=verbose)
         else:
@@ -532,7 +525,8 @@ class ModelHelper(object):
 
         params = self._updated_gen_params(shuffle       = False, 
                                           verbose       = verbose,
-                                          fixed_batches = False)
+                                          fixed_batches = False,
+                                          group_by      = None)
         if verbose>1:
             print('Saving activations for layer:', (output_layer or 'final'))
             print('file:', file_path)
@@ -550,21 +544,20 @@ class ModelHelper(object):
                 
             with H5Helper(file_path, 
                           overwrite = overwrite, 
-                          verbose    = verbose) as h:
+                          verbose   = verbose) as h:
                 if groups == 1:
-                    h.write_data(activ, ids[data_gen.inputs[0]])
+                    h.write_data(activ, list(ids.loc[:,data_gen.inputs[0]]))
                 else:
-                    h.write_data([activ], ids[data_gen.inputs[0]], 
+                    h.write_data([activ], list(ids.loc[:,data_gen.inputs[0]]), 
                                  group_names=[group_name])
             del activ
 
-    def save_features(self, process_gen=None, batch_size = 1024,
+    def save_features(self, process_gen, batch_size = 1024,
                       save_as_type = np.float32, overwrite = False):
         """
         Save augmented features to HDF5 file.
         
-        * process_gen: if None: applies `self.gen_params.preprocess_fn`
-                       if function: applies `process_gen` as `self.gen_params.preprocess_fn`
+        * process_gen: if function: applies `process_gen` as `self.gen_params.preprocess_fn`
                        if generator: defines `preprocess_fn` functions to use for each augmentation
         * batch_size: batch size used for storing activations (in an `np.ndarray`)
         * save_as_type: convert the activations to this type, to reduce required storage
@@ -573,9 +566,7 @@ class ModelHelper(object):
         ids = self.ids
         print('[Saving features]')
 
-        if process_gen is None:
-            process_gen = [(self.gen_params.preprocess_fn,None)]
-        elif not inspect.isgeneratorfunction(process_gen):
+        if not inspect.isgeneratorfunction(process_gen):
             process_gen = [(process_gen,None)]
         else:
             process_gen = process_gen()
@@ -584,19 +575,22 @@ class ModelHelper(object):
         for (process_fn, args) in process_gen:
             self.gen_params.process_fn = process_fn
             if args:
-                arg_str = ', '.join(['{}:{}'.format(*a) for a in args.items()])
-                print('Augmentation args (' + arg_str + ')')
+                if isinstance(args, dict):
+                    arg_str = ', '.join(['{}:{}'.format(*a) for a in args.items()])
+                else: 
+                    arg_str = str(args)
+                print('Augmentation args "' + arg_str + '"')
 
             numel = len(ids)
             for i in range(0,numel,batch_size):
                 istop = min(i+batch_size, numel)
                 print('Images',i,':',istop)
-                ids_batch = ids[i:istop].reset_index(drop=True)
+                ids_batch = ids.iloc[i:istop]
 
                 self.save_activations(ids=ids_batch, verbose = first_verbose, 
                                       groups       = [arg_str] if args else 1,
                                       save_as_type = save_as_type,
-                                      overwrite   = overwrite)
+                                      overwrite    = overwrite)
                 overwrite = False
                 first_verbose = 1
 
