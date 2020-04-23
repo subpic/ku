@@ -481,11 +481,11 @@ def show_progress(iteration, total, prefix = '', suffix = 'done', decimals = 0,
         fill        - Optional  : bar fill character (Str)
         printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
     """
-    iteration += 1
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration / total)
+    iteration_ = iteration+1
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration_ / float(total)))
+    filledLength = int(length * iteration_ / total)
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = printEnd)
     # Print New Line on Complete
-    if iteration == total: 
+    if iteration_ == total: 
         print()
