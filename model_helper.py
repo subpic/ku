@@ -51,16 +51,16 @@ class ModelHelper(object):
         lr   = 1e-4,               # learning rate
         loss = "MSE",              # loss function
         loss_weights   = None,     # loss weights, if multiple losses are used
-        metrics        = ["mae"],  #
+        metrics        = [],       #
         class_weights  = None,     # class weights for unbalanced classes
         multiproc      = True,     # multi-processing params
         workers        = 5,        #
         max_queue_size = 10,       #
-        monitor_metric      = 'val_mean_absolute_error',  # monitoring params
-        monitor_mode        = 'min',         
-        early_stop_patience = 20,            
-        checkpoint_period   = 1,             
-        save_best_only = True,               
+        monitor_metric      = 'val_loss',  # monitoring params
+        monitor_mode        = 'min',       #       
+        early_stop_patience = 20,          #       
+        checkpoint_period   = 1,           #       
+        save_best_only      = True,        #       
         optimizer      = optimizers.Adam(),  # optimizer object
         write_graph    = False,              # TensorBoard params
         write_images   = False,              #
@@ -69,6 +69,7 @@ class ModelHelper(object):
         features_root  = 'features/',        # saved features path (by `save_activations`)
         gen_class      = None                # generator class
                                              # inferred from self.gen_params.data_path
+        callbacks      = None                # option to customize callbacks list
         """
         self.model = model
         self.ids = ids
@@ -83,18 +84,18 @@ class ModelHelper(object):
         self.params = Munch(lr   = 1e-4,               # learning rate
                             loss = "MSE",              # loss function
                             loss_weights   = None,     # loss weights, if multiple losses are used
-                            metrics        = ["mae"],  #
+                            metrics        = [],       #
                             class_weights  = None,     # class weights for unbalanced classes
 
                             multiproc      = True,     # multi-processing params
                             workers        = 2,        #
                             max_queue_size = 10,       #
 
-                            monitor_metric      = 'val_mean_absolute_error',  # monitoring params
-                            monitor_mode        = 'min',                      #
-                            early_stop_patience = 20,                         #
-                            checkpoint_period   = 1,                          #
-                            save_best_only = True,                            #
+                            monitor_metric      = 'val_loss',  # monitoring params
+                            monitor_mode        = 'min',       #
+                            early_stop_patience = 20,          #
+                            checkpoint_period   = 1,           #
+                            save_best_only      = True,        #
                             
                             optimizer      = optimizers.Adam(),  # optimizer object, its parameters
                                                                  # can changed during runtime
@@ -103,7 +104,8 @@ class ModelHelper(object):
                             logs_root      = 'logs/',            # TensorBoard logs
                             models_root    = 'models/',          # saved models path
                             features_root  = 'features/',        # saved features path (by `save_activations`)
-                            gen_class      = None                # generator class inferred from self.gen_params.data_path
+                            gen_class      = None,               # generator class inferred from self.gen_params.data_path
+                            callbacks      = None                # option to customize callbacks list
                             )
 
         for key in list(params.keys()):
@@ -124,8 +126,9 @@ class ModelHelper(object):
                     self.params.gen_class = DataGeneratorDisk
             else:
                 raise ValueError("Cannot infer generator class")
-        
+                
         self.set_model_name()
+
     
     def set_model_name(self):
         """Update model name based on parameters in self. gen_params, params and model"""
@@ -138,25 +141,29 @@ class ModelHelper(object):
         if not isinstance(loss, dict):
             loss_str = loss2str(loss)
         else:
-            loss_str = '[%s]' % ','.join(map(loss2str, list(loss.values())))
-        
+            loss_str = '[%s]' % ','.join(map(loss2str, list(loss.values())))            
         i = '{}{}'.format(len(h.model.inputs),
-                           format_size(h.gen_params.input_shape))
-        
+                           format_size(h.gen_params.input_shape))        
         if h.model.outputs:
             o = '{}{}'.format(len(h.model.outputs),
                               format_size(h.model.outputs[0].shape[1:].as_list()))
         else: o = ''
-        
         name = dict(i   = i,
                     o   = o,
                     l   = loss_str,
                     bsz = h.gen_params.batch_size)
-        
         self.model_name.update(name)
+                
+        if isinstance(h.params.callbacks, list):
+            # use custom callbacks, if defined
+            self.callbacks = h.params.callbacks
+        else:
+            # reset callbacks to use new model name
+            self.callbacks = self.set_callbacks()
+        
         return self.model_name
     
-    def callbacks(self):
+    def set_callbacks(self):
         """Setup callbacks"""
         
         p = self.params
@@ -283,16 +290,21 @@ class ModelHelper(object):
 
         if valid_in_memory:
             valid_gen.batch_size = len(valid_gen.ids)
+            valid_gen.on_epoch_end()
             valid_data = valid_gen[0]
-            valid_steps = None
+            valid_steps = 1
         else:
             valid_data = valid_gen
             if issubclass(type(valid_gen), 
                           keras.utils.Sequence):
                 valid_steps = len(valid_gen)
             else:
-                valid_steps = None
-                
+                valid_steps = 1
+        
+        # use custom callbacks, if defined
+        if isinstance(self.params.callbacks, list):            
+            self.callbacks = self.params.callbacks
+                            
         if issubclass(type(train_gen), 
                       keras.utils.Sequence): 
             # train using the generator            
@@ -302,7 +314,7 @@ class ModelHelper(object):
                              validation_data   = valid_data, 
                              validation_steps  = valid_steps,
                              workers           = self.params.workers, 
-                             callbacks         = self.callbacks(),
+                             callbacks         = self.callbacks,
                              max_queue_size    = self.params.max_queue_size,
                              class_weight      = self.params.class_weights,
                              use_multiprocessing = self.params.multiproc,
@@ -315,7 +327,7 @@ class ModelHelper(object):
             history = self.model.fit(X, y,
                              batch_size      = self.gen_params.batch_size,
                              epochs          = epochs,
-                             callbacks       = self.callbacks(),                
+                             callbacks       = self.callbacks,                
                              validation_data = valid_data,
                              shuffle         = self.gen_params.shuffle,
                              class_weight    = self.params.class_weights,
@@ -366,8 +378,8 @@ class ModelHelper(object):
         :return:        if `repeats` == 1 then `np.ndarray` else `list[np.ndarray]`
         """
         if not test_gen:
-            params_test = self._updated_gen_params(shuffle=False, 
-                                                   fixed_batches=False)
+            params_test = self._updated_gen_params(shuffle       = False, 
+                                                   fixed_batches = False)
             if batch_size: params_test.batch_size = batch_size
             test_gen = self.params.gen_class(self.ids[self.ids.set == 'test'],
                                              **params_test)
@@ -407,7 +419,7 @@ class ModelHelper(object):
         if recompile: self.compile()
 
         if issubclass(type(valid_gen), keras.utils.Sequence): 
-            r = self.model.evaluate_generator(valid_gen, 
+            r = self.model.evaluate_generator(valid_gen,
                                               verbose=verbose)
         else:
             X_valid, y_valid = valid_gen
@@ -584,7 +596,7 @@ class ModelHelper(object):
             numel = len(ids)
             for i in range(0,numel,batch_size):
                 istop = min(i+batch_size, numel)
-                print('Images',i,':',istop)
+                print('\nImages',i,':',istop)
                 ids_batch = ids.iloc[i:istop]
 
                 self.save_activations(ids=ids_batch, verbose = first_verbose, 
