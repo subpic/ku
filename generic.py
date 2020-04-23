@@ -467,8 +467,8 @@ def array_overlap(a, b):
 
 # Print iterations progress
 # Source: https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-def show_progress(iteration, total, prefix = '', suffix = 'done', decimals = 1, 
-                  length = 50, fill = '#', printEnd = "\r"):
+def show_progress(iteration, total, prefix = '', suffix = 'done', decimals = 0, 
+                  length = 50, fill = '=', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar
     @params:
