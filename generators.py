@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import multiprocessing as mp
 from munch import Munch
-
+from six import string_types
 import keras
 
 from .image_utils import *
@@ -49,8 +49,8 @@ class DataGeneratorDisk(keras.utils.Sequence):
                             batch_size    = 32,    shuffle  = True,
                             input_shape   = None, 
                             process_fn    = None,  read_fn  = None,
-                            deterministic = None,  inputs   =('image_name',),
-                            inputs_df     = None,  outputs  = ('MOS',), 
+                            deterministic = None,  inputs   = [],
+                            inputs_df     = None,  outputs  = [], 
                             verbose       = False, fixed_batches = False,
                             random_group  = False, group_names   = None,
                             process_args  = {},    group_by = None)
@@ -60,7 +60,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
                                get(params.deterministic,
                                    params.deterministic)
         params.process_args = params.process_args or {}
-        params.group_names   = params.group_names or ['']
+        params.group_names  = params.group_names or ['']
         self.__dict__.update(**params)  # set all as self.<param>        
         if self.verbose>1:
             print('Initialized DataGeneratorDisk')
@@ -151,45 +151,46 @@ class DataGeneratorDisk(keras.utils.Sequence):
         if isinstance(group_names[0], (list, tuple)):
             idx = np.random.randint(0, len(group_names))
             group_names = group_names[idx]
+        
+        if isinstance(params.data_path, string_types):
+            # get data for each input and add it to X_list            
+            for group_name in group_names:
+                for input_name in params.inputs:
+                    data = []                    
+                    # read the data from disk into a list
+                    for row in ids_batch.itertuples():
+                        input_data = group_name + getattr(row, input_name)                        
+                        if params.read_fn is None:
+                            file_path = os.path.join(params.data_path, input_data)
+                            file_data = read_image(file_path)
+                        else:
+                            file_data = params.read_fn(input_data, params)
+                        data.append(file_data)
 
-        # get data for each input and add it to X_list
-        for group_name in group_names:
-            for input_name in params.inputs:
-                data = []
-                # read the data from disk into a list
-                for row in ids_batch.itertuples():
-                    input_data = group_name + getattr(row, input_name)
-                    if params.read_fn is None:
-                        file_path = os.path.join(params.data_path, input_data)
-                        file_data = read_image(file_path)
+                    # column name for the arguments to `process_fn`
+                    args_name = params.process_args.get(input_name, None)
+
+                    # if needed, process each image, and add to X_list (inputs list)
+                    if params.process_fn not in [None, False]:                
+                        data_list = []
+                        for i, row in enumerate(ids_batch.itertuples()):                    
+                            arg = [] if args_name is None else [getattr(row, args_name)]
+                            data_i = params.process_fn(data[i], *arg)
+                            data_list.append(force_list(data_i))
+
+                        # transpose list, sublists become batches
+                        data_list = zip(*data_list)
+
+                        # for each sublist of arrays
+                        data_arrays = []
+                        for batch_list in data_list:
+                            batch_arr = np.float32(np.stack(batch_list))
+                            data_arrays.append(batch_arr)
+
+                        X_list.extend(data_arrays)
                     else:
-                        file_data = params.read_fn(input_data, params)
-                    data.append(file_data)
-
-                # column name for the arguments to `process_fn`
-                args_name = params.process_args.get(input_name, None)
-
-                # if needed, process each image, and add to X_list (inputs list)
-                if params.process_fn not in [None, False]:                
-                    data_list = []
-                    for i, row in enumerate(ids_batch.itertuples()):                    
-                        arg = [] if args_name is None else [getattr(row, args_name)]
-                        data_i = params.process_fn(data[i], *arg)
-                        data_list.append(force_list(data_i))
-
-                    # transpose list, sublists become batches
-                    data_list = zip(*data_list)
-
-                    # for each sublist of arrays
-                    data_arrays = []
-                    for batch_list in data_list:
-                        batch_arr = np.float32(np.stack(batch_list))
-                        data_arrays.append(batch_arr)
-
-                    X_list.extend(data_arrays)
-                else:
-                    data_array = np.float32(np.stack(data))
-                    X_list.append(data_array)
+                        data_array = np.float32(np.stack(data))
+                        X_list.append(data_array)
 
         np.random.seed(None)
         return (X_list, y)
@@ -225,10 +226,10 @@ class DataGeneratorHDF5(DataGeneratorDisk):
     """
     def __init__(self, ids, data_path, **args):
         params_defa = Munch(ids         = ids,   data_path     = data_path, deterministic = False,
-                            batch_size  = 32,    shuffle       = True,      inputs        = ('image_name',),
-                            inputs_df   = None,  outputs       = ('MOS',),  memory_mapped = False,
-                            verbose     = False, fixed_batches = False,     random_group  = False,
-                            process_fn  = None,  process_args  = None,      group_names   = None,
+                            batch_size  = 32,    shuffle       = True,   inputs        = [],
+                            inputs_df   = None,  outputs       = [],   memory_mapped = False,
+                            verbose     = False, fixed_batches = False,  random_group  = False,
+                            process_fn  = None,  process_args  = None,   group_names   = None,
                             input_shape = None,  group_by      = None)
 
         check_keys_exist(args, params_defa)
@@ -255,7 +256,7 @@ class DataGeneratorHDF5(DataGeneratorDisk):
         assert isinstance(params.inputs, (tuple, list)),\
         'Generator inputs/outputs must be of type list or tuple'
         
-        if params.data_path:
+        if isinstance(params.data_path, string_types):
             with H5Helper(params.data_path, file_mode='r',
                           memory_mapped=params.memory_mapped) as h:
                 # group_names are randomly sampled from meta-groups 
