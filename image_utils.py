@@ -180,7 +180,7 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
     
     errors = []
     for i, file_path_src in enumerate(file_list):
-        show_progress(i, len(file_list), 50)
+        show_progress(i, len(file_list), prefix='Resizing')
 
         try:            
             file_name = os.path.split(file_path_src)[1]
@@ -228,7 +228,7 @@ def check_images(image_dir, image_types =\
     image_names_err = []
     image_names_all = []
     for (i, file_path) in enumerate(file_list):
-        show_progress(i, len(file_list), 50)
+        show_progress(i, len(file_list), prefix='Checking')
         
         try:            
             file_dir, file_name = os.path.split(file_path)
@@ -301,7 +301,7 @@ def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
 
         for i, file_path_src in enumerate(file_list):
             if verbose:
-                show_progress(i, len(file_list), 10)
+                show_progress(i, len(file_list), prefix='Augmenting')
 
             try:
                 file_name = os.path.split(file_path_src)[1]

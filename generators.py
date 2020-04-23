@@ -77,7 +77,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
     def __getitem__(self, index):
         """Generate a batch of data"""
         if self.verbose:
-            show_progress(index, len(self))
+            show_progress(index, len(self), prefix='Generating batches')
 
         ids_batch = self.ids[self.ids_index.batch_index==index]
         return self._data_generation(ids_batch)

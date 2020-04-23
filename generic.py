@@ -42,7 +42,7 @@ class H5Helper(object):
         self.file_name = file_name
         self.verbose = verbose
         self.memory_mapped = memory_mapped
-        self.backing_store = backing_store        
+        self.backing_store = backing_store
         self._lock = mp.Lock()
         _file_mode = file_mode or ('w' if overwrite else 'a')
         with self._lock:
@@ -57,8 +57,7 @@ class H5Helper(object):
         # internal to the class
         for i in range(len(data)):
             if self.verbose:
-                show_progress(i, len(data), num_markers=5,
-                              marker='{} '.format(i), end='done\n')
+                show_progress(i, len(data), prefix='Writing datasets')
             writer.create_dataset(dataset_names[i], data=data[i, ...])
 
     def write_data(self, data, dataset_names, group_names=None):
@@ -96,8 +95,7 @@ class H5Helper(object):
         data[0,...] = data0
         for i in range(1, len(dataset_names)):
             if self.verbose:
-                show_progress(i, len(dataset_names), num_markers=5,
-                              marker='{} '.format(i), end='done\n')
+                show_progress(i, len(data), prefix='Reading datasets')
             data[i, ...] = reader[dataset_names[i]][...]
         return data
   
@@ -466,9 +464,28 @@ def array_overlap(a, b):
 
     return ia[inds_a], ib[inds_b]
 
-def show_progress(count, total, num_markers=50, marker='.',end='\n'):
-    progress_value = max(np.int32(total/num_markers), 1)
-    if count % progress_value == 0: 
-        print(marker,end='')
-    if count==total-1:
-        print(end=end)
+
+# Print iterations progress
+# Source: https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+def show_progress(iteration, total, prefix = '', suffix = 'done', decimals = 1, 
+                  length = 50, fill = '#', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    iteration += 1
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration / total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = printEnd)
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
