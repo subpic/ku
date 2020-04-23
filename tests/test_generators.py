@@ -251,3 +251,92 @@ def test_group_names_DataGeneratorDisk():
     assert np.unique(sizes).shape[0]>1
 
     shutil.rmtree('images1/')
+    
+def test_basics_deterministic_shuffle_consistency_group_by():
+
+    ids = pd.DataFrame(dict(a = range(10), 
+                            b = list(range(9,-1,-1)),
+                            c = np.arange(10)<5))
+    
+    gen_params = Munch(batch_size    = 4,
+                       data_path     = None,
+                       input_shape   = None,
+                       inputs_df     = ['a'],
+                       outputs       = ['b'],
+                       shuffle       = False,
+                       fixed_batches = True)
+
+    # check `fixed_batches` switch
+    g = gr.DataGeneratorDisk(ids, **gen_params)
+    assert np.array_equal([gen.get_sizes(x) for x in g], 
+                          ['([array<4,1>], [array<4,1>])', 
+                           '([array<4,1>], [array<4,1>])'])
+    assert np.array_equal(g[0][0][0].squeeze(), range(4))
+
+    gen_params.fixed_batches = False
+    g = gr.DataGeneratorDisk(ids, **gen_params)
+    assert np.array_equal([gen.get_sizes(x) for x in g], 
+                          ['([array<4,1>], [array<4,1>])',
+                           '([array<4,1>], [array<4,1>])',
+                           '([array<2,1>], [array<2,1>])'])
+    assert np.array_equal(g[2][0][0].squeeze(), [8, 9])
+
+    # check randomized
+    gen_params.shuffle = True
+    gen_params.fixed_batches = False # maintain
+    g = gr.DataGeneratorDisk(ids, **gen_params)
+
+    # check if it returns all items
+    data = list(zip(*list(g)))
+    data0 = np.concatenate([l[0] for l in data[0]], axis=0).squeeze()
+    data1 = np.concatenate([l[0] for l in data[1]], axis=0).squeeze()
+    assert np.array_equal(np.sort(data0), np.arange(10))
+    assert np.array_equal(np.sort(data1), np.arange(10))
+
+    # check if randomization is applied, consistently
+    num_randoms0 = 0
+    num_randoms1 = 0
+    for i in range(100):
+        g = gr.DataGeneratorDisk(ids, **gen_params)
+        data = list(zip(*list(g)))
+        data0 = np.concatenate([l[0] for l in data[0]], axis=0).squeeze()
+        data1 = np.concatenate([l[0] for l in data[1]], axis=0).squeeze()
+
+        # check consistency
+        ids_ = ids.copy()
+        ids_.index = ids_.a
+        np.array_equal(ids_.loc[data0].b, data1)
+
+        num_randoms0 += not np.array_equal(data0, np.arange(10))
+        num_randoms1 += not np.array_equal(data1, np.arange(10))
+
+    # check randomization, at least once
+    assert num_randoms0
+    assert num_randoms0
+
+    # check deterministic
+    gen_params.shuffle       = True
+    gen_params.deterministic = np.random.randint(100)
+    assert np.array_equal(gr.DataGeneratorDisk(ids, **gen_params)[0], 
+                          gr.DataGeneratorDisk(ids, **gen_params)[0])
+    
+    gen_params.update(fixed_batches = False,
+                  shuffle       = True,
+                  group_by      = 'c',
+                  deterministic = False)
+
+    g = gr.DataGeneratorDisk(ids, **gen_params)
+    data = list(zip(*list(g)))
+    data = [[l[0] for l in d] for d in data]
+    data_conc = [np.concatenate(d, axis=0) for d in data]
+
+    # returns all
+    df = pd.DataFrame(np.concatenate(data_conc, axis=1), columns=('a','b'))
+    x = df.merge(ids, on='a')
+    assert np.all(x.b_x == x.b_y)
+
+    # each batch returns a single group
+    ids_ = ids.copy()
+    ids_.index = ids_.a
+    for i, d in enumerate(data[0]):
+        assert ids_.loc[d[0]].c.unique().shape==(1,)
