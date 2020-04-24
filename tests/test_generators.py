@@ -73,7 +73,7 @@ def test_DataGeneratorDisk():
     g.outputs = []
     assert gen.get_sizes(g[0]) == '([array<2,2>], [])'
 
-    g.inputs_df = [['score'], ('score','score')]
+    g.inputs_df = [['score'], ['score','score']]
     assert gen.get_sizes(g[0]) == '([array<2,1>, array<2,2>], [])'
 
     g.inputs_df = []
@@ -107,7 +107,7 @@ def test_DataGeneratorHDF5():
     g.outputs = []
     assert gen.get_sizes(g[0]) == '([array<2,2>], [])'
 
-    g.inputs_df = [['score'], ('score','score')]
+    g.inputs_df = [['score'], ['score','score']]
     assert gen.get_sizes(g[0]) == '([array<2,1>, array<2,2>], [])'
 
     g.inputs_df = []
@@ -340,3 +340,25 @@ def test_basics_deterministic_shuffle_consistency_group_by():
     ids_.index = ids_.a
     for i, d in enumerate(data[0]):
         assert ids_.loc[d[0]].c.unique().shape==(1,)
+        
+def test_accessor_function_numpy_array():
+    
+    ids = pd.DataFrame(dict(a = range(10), 
+                        b = list(np.random.randint(0,10,(10,2,2)))))
+    gen_params = Munch(batch_size    = 4,
+                       data_path     = None,
+                       input_shape   = None,
+                       inputs_df     = lambda ids: [ids[['a']].values],
+                       outputs       = ['b'],
+                       shuffle       = False,
+                       fixed_batches = True)
+
+    # test using a function to access data from ids
+    # test if data in ids items can be ndarrays
+    g = gr.DataGeneratorDisk(ids, **gen_params)
+    assert gen.get_sizes(g[0])=='([array<4,1>], [array<4,2,2>])'
+
+    # test if double inputs works
+    gen_params.outputs = ['a','a']
+    g = gr.DataGeneratorDisk(ids, **gen_params)
+    assert gen.get_sizes(g[0])=='([array<4,1>], [array<4,2>])'

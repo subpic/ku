@@ -30,15 +30,15 @@ class DataGeneratorDisk(keras.utils.Sequence):
     * process_fn (function):  function applied to each image as it is read
     * read_fn (function):     function used to read data from a file (returns numpy.array)
                               if None, image_utils.read_image() is used (default)
-    * deterministic (None, int):     random seed for shuffling order
-    * inputs (tuple of strings):     column names from `ids` containing image names
-    * inputs_df (tuple of strings):  column names from `ids`, returns values from the DataFrame itself
-    * outputs (tuple of strings):    column names from `ids`
+    * deterministic (None, int):   random seed for shuffling order
+    * inputs (list of strings):    column names from `ids` containing image names
+    * inputs_df (list of strings): column names from `ids`, returns values from the DataFrame itself
+    * outputs (list of strings):   column names from `ids`
     * verbose (bool):             logging verbosity
     * fixed_batches (bool):       only return full batches, ignore the last incomplete batch if needed
     * process_args (dictionary):  dict of corresponding `ids` columns for `inputs`
                                   containing arguments to pass to `process_fn`
-    * group_names (strings tuple): read only from specified sub-paths (groups), or from any if `group_names` is None
+    * group_names (strings list): read only from specified sub-paths (groups), or from any if `group_names` is None
                                    `group_names` are randomly sampled from meta-groups
                                    i.e. when group_names = [[group_names_1], [group_names_2]]
     * random_group (bool): read inputs from a random group for every image
@@ -61,7 +61,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
                                    params.deterministic)
         params.process_args = params.process_args or {}
         params.group_names  = params.group_names or ['']
-        self.__dict__.update(**params)  # set all as self.<param>        
+        self.__dict__.update(**params)  # set all as self.<param>
         if self.verbose>1:
             print('Initialized DataGeneratorDisk')
         self.on_epoch_end()  # initialize indexes
@@ -115,20 +115,26 @@ class DataGeneratorDisk(keras.utils.Sequence):
             index += 1
             selectable = self.ids_index.batch_index == -1
         
+    def _access_field(self, ids_batch, accessor):                
+        if isinstance(ids_batch[accessor].values[0][0], np.ndarray):
+            return np.stack(ids_batch[accessor].values.squeeze(), axis=0)
+        else:
+            return ids_batch[accessor].values
+        
     def _read_data(self, ids_batch, accessor):        
         X = []
         if accessor:
-            assert isinstance(accessor, (tuple, list)) or callable(accessor),\
-            'Generator inputs/outputs must be of type list, tuple, or function'
+            assert isinstance(accessor, list) or callable(accessor),\
+            'Generator inputs/outputs must be of type list, or function'
 
             if callable(accessor):
                 X = accessor(ids_batch)
-            elif isinstance(accessor, (list, tuple)):
-                if all(isinstance(a, (list, tuple)) for a in accessor):
-                    X = [np.array(ids_batch.loc[:,a]) for a in accessor]
+            elif isinstance(accessor, list):
+                if all(isinstance(a, list) for a in accessor):
+                    X = [self._access_field(ids_batch,a) for a in accessor]
                 else:
-                    assert all(not isinstance(a, (list, tuple)) for a in accessor)
-                    X = [np.array(ids_batch.loc[:,accessor])]
+                    assert all(not isinstance(a, list) for a in accessor)
+                    X = [self._access_field(ids_batch,accessor)]
             else:
                  raise Exception('Wrong generator input/output specifications')
 
@@ -142,13 +148,13 @@ class DataGeneratorDisk(keras.utils.Sequence):
         y = self._read_data(ids_batch, params.outputs)        
         X_list = self._read_data(ids_batch, params.inputs_df)
             
-        assert isinstance(params.inputs, (tuple, list)),\
-        'Generator inputs/outputs must be of type list or tuple'
+        assert isinstance(params.inputs, list),\
+        'Generator inputs/outputs must be of type list'
 
         # group_names are randomly sampled from meta-groups 
         # i.e. when group_names = [[group_names1], [group_names2]]
         group_names = params.group_names
-        if isinstance(group_names[0], (list, tuple)):
+        if isinstance(group_names[0], list):
             idx = np.random.randint(0, len(group_names))
             group_names = group_names[idx]
         
@@ -212,14 +218,14 @@ class DataGeneratorHDF5(DataGeneratorDisk):
     * shuffle (bool):            randomized reading order
     * process_fn (function):     function applied to each data instance as it is read
     * deterministic (None, int): random seed for shuffling order
-    * inputs (strings tuple):    column names from `ids` containing data instance names, read from `data_path`
-    * inputs_df (strings tuple): column names from `ids`, returns values from the DataFrame itself
-    * outputs (strings tuple):   column names from `ids`, returns values from the DataFrame itself
+    * inputs (strings list):     column names from `ids` containing data instance names, read from `data_path`
+    * inputs_df (strings list):  column names from `ids`, returns values from the DataFrame itself
+    * outputs (strings list):    column names from `ids`, returns values from the DataFrame itself
     * verbose (bool):            logging verbosity
     * fixed_batches (bool):      only return full batches, ignore the last incomplete batch if needed
     * process_args (dictionary): dict of corresponding `ids` columns for `inputs`
                                  containing arguments to pass to `process_fn`
-    * group_names (strings tuple): read only from specified groups, or from any if `group_names` is None
+    * group_names (strings list): read only from specified groups, or from any if `group_names` is None
                                    `group_names` are randomly sampled from meta-groups
                                    i.e. when group_names = [[group_names_1], [group_names_2]]
     * random_group (bool): read inputs from a random group for every data instance
@@ -240,7 +246,6 @@ class DataGeneratorHDF5(DataGeneratorDisk):
                                 get(params.deterministic,
                                     params.deterministic)
         self.__dict__.update(**params)  # set all as self.<param>
-
         if self.verbose>1:
             print('Initialized DataGeneratorHDF5')
         self.on_epoch_end()  # initialize indexes
@@ -253,8 +258,8 @@ class DataGeneratorHDF5(DataGeneratorDisk):
         y = self._read_data(ids_batch, params.outputs)
         X_list = self._read_data(ids_batch, params.inputs_df)
 
-        assert isinstance(params.inputs, (tuple, list)),\
-        'Generator inputs/outputs must be of type list or tuple'
+        assert isinstance(params.inputs, list),\
+        'Generator inputs/outputs must be of type list'
         
         if isinstance(params.data_path, string_types):
             with H5Helper(params.data_path, file_mode='r',
@@ -262,7 +267,7 @@ class DataGeneratorHDF5(DataGeneratorDisk):
                 # group_names are randomly sampled from meta-groups 
                 # i.e. when group_names = [[group_names1], [group_names2]]
                 group_names = params.group_names
-                if isinstance(group_names[0], (list, tuple)):
+                if isinstance(group_names[0], list):
                     idx = np.random.randint(0, len(group_names))
                     group_names = group_names[idx]
 
