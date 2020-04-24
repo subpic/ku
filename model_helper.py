@@ -126,19 +126,24 @@ class ModelHelper(object):
                     self.params.gen_class = DataGeneratorDisk
             else:
                 raise ValueError("Cannot infer generator class")
-                
-        self.update_names()
-
-    def update_names(self):
-        """Propagate configuration: update model_name and callbacks"""
-        self.set_model_name()
         
-        if isinstance(self.params.callbacks, list):
-            # use custom callbacks, if defined
-            self.callbacks = self.params.callbacks
-        else:
-            # reset callbacks to use new model name
+        self.callbacks = None       
+        self.set_model_name()
+
+    def update_name(self, **kwargs):
+        """Propagate configuration: update model_name and callbacks"""
+        # update configuration parameters
+        self.set_model_name()
+        # update new parameters
+        self.model_name(**kwargs)
+        
+        # always use custom callbacks, if defined
+        if isinstance(self.params.callbacks, list):            
+            self.callbacks = self.params.callbacks        
+        else: # reset callbacks to use new model name
             self.callbacks = self.set_callbacks()
+            
+        return self.model_name
     
     def set_model_name(self):
         """Update model name based on parameters in self. gen_params, params and model"""
@@ -303,9 +308,12 @@ class ModelHelper(object):
             else:
                 valid_steps = 1
         
-        # use custom callbacks, if defined
+        # always use custom callbacks, if defined
         if isinstance(self.params.callbacks, list):            
             self.callbacks = self.params.callbacks
+        # set callbacks if first run, otherwise do not reset
+        elif self.callbacks is None:
+            self.callbacks = self.set_callbacks()
                             
         if issubclass(type(train_gen), 
                       keras.utils.Sequence): 

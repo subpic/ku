@@ -44,8 +44,7 @@ def test_validation_save_best_multiple_training_rounds():
                             models_root= 'models',
                             gen_params = gen_params)
 
-    print('Model name:', helper.model_name(test='on'))
-    helper.update_names()
+    print('Model name:', helper.update_name(test='on'))
 
     valid_gen = helper.make_generator(ids[ids.set == 'validation'], 
                                       shuffle     =  False)
