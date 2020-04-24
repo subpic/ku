@@ -13,9 +13,6 @@ from sklearn.model_selection import train_test_split
 
 if sys.version_info.major == 2:
     input = raw_input
-    from imp import reload
-else:
-    from importlib import reload
 
 # Helps with the DataGeneratorHDF5
 class H5Helper(object):
@@ -353,7 +350,7 @@ class ShortNameBuilder(Munch):
         def combine(k, v):
             k = str(k)[:self.__max_len]
             v = str(v)[:self.__max_len]
-            return k + self.__sep[0] + v        
+            return (k + self.__sep[0] + v if v else k)
         return self.__prefix + \
                self.__sep[1].join([combine(k, self[k])
                     for k in sorted(self.keys())

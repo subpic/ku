@@ -11,6 +11,7 @@ from munch import Munch
 import pandas as pd, numpy as np
 import pytest, shutil
 from matplotlib import pyplot as plt
+from os import path
 
 from keras.layers import Input
 from keras.models import Model
@@ -43,6 +44,9 @@ def test_validation_save_best_multiple_training_rounds():
                             models_root= 'models',
                             gen_params = gen_params)
 
+    print('Model name:', helper.model_name(test='on'))
+    helper.update_names()
+
     valid_gen = helper.make_generator(ids[ids.set == 'validation'], 
                                       shuffle     =  False)
     valid_gen.batch_size = len(valid_gen.ids)
@@ -50,6 +54,8 @@ def test_validation_save_best_multiple_training_rounds():
     assert valid_gen.ids_index.batch_index.unique().size == 1
 
     helper.train(lr=1e-1, epochs=50, verbose=False, valid_in_memory=True);
+
+    assert path.exists(helper.params.logs_root + '/' + helper.model_name())
 
     helper.load_model(); # best
     valid_best1 = helper.validate(verbose=1)

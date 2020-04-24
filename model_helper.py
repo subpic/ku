@@ -5,7 +5,7 @@ from builtins import str
 from builtins import zip
 from builtins import range
 from builtins import object
-import os, sys, numbers, glob, shutil, inspect
+import os, sys, numbers, glob, shutil, inspect, copy
 import multiprocessing as mp, pandas as pd, numpy as np
 from pprint import pprint
 from munch import Munch
@@ -127,8 +127,18 @@ class ModelHelper(object):
             else:
                 raise ValueError("Cannot infer generator class")
                 
-        self.set_model_name()
+        self.update_names()
 
+    def update_names(self):
+        """Propagate configuration: update model_name and callbacks"""
+        self.set_model_name()
+        
+        if isinstance(self.params.callbacks, list):
+            # use custom callbacks, if defined
+            self.callbacks = self.params.callbacks
+        else:
+            # reset callbacks to use new model name
+            self.callbacks = self.set_callbacks()
     
     def set_model_name(self):
         """Update model name based on parameters in self. gen_params, params and model"""
@@ -153,13 +163,6 @@ class ModelHelper(object):
                     l   = loss_str,
                     bsz = h.gen_params.batch_size)
         self.model_name.update(name)
-                
-        if isinstance(h.params.callbacks, list):
-            # use custom callbacks, if defined
-            self.callbacks = h.params.callbacks
-        else:
-            # reset callbacks to use new model name
-            self.callbacks = self.set_callbacks()
         
         return self.model_name
     
@@ -194,8 +197,7 @@ class ModelHelper(object):
 
 
     def _updated_gen_params(self, **kwargs):
-        # private method
-        params = self.gen_params.copy()
+        params = copy.deepcopy(self.gen_params)
         params.update(kwargs)
         return params
     
@@ -221,7 +223,7 @@ class ModelHelper(object):
         Useful for testing the default generator functionality.
 
         * input_idx: scalar or 2-tuple of indices
-        :return: (generated_batch, generator_instance)
+        :return: generated_batch
         """
         if not isinstance(input_idx, (list, tuple)):
             ids_gen = self.ids.iloc[input_idx:input_idx+1]
@@ -230,7 +232,7 @@ class ModelHelper(object):
 
         gen = self.make_generator(ids_gen)
         x = gen[0]  # generated data
-        print('generator[0]:'); print_sizes(x)
+        print('First batch sizes:'); print_sizes(x)
         return x
 
     def set_multi_gpu(self, gpus=None):
