@@ -80,6 +80,12 @@ class DataGeneratorDisk(keras.utils.Sequence):
             show_progress(index, len(self), prefix='Generating batches')
 
         ids_batch = self.ids[self.ids_index.batch_index==index]
+
+        # reshuffle to remove ordering by index
+        if self.shuffle:
+            ids_batch = ids_batch.reset_index(drop=True).\
+                        sample(frac=1, random_state=self.deterministic)
+
         return self._data_generation(ids_batch)
 
     def on_epoch_end(self):
