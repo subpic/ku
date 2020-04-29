@@ -291,11 +291,19 @@ def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
     errors = []
     ids_list = []
 
+    # args is a dict to be converted to a dir name, or is a string
     for process_fn, args in process_gen():
         if args:
-            args_str = ', '.join(['{}:{}'.format(*a) for a in args.items()])
+            if isinstance(args, dict):
+                args_str    = ', '.join(['{}:{}'.format(*a) for a in args.items()])
+                args_values = list(args.values())
+                args_keys   = list(args.keys())
+            else:
+                args_str = str(args)
+                args_values = [args_str]
+                args_keys   = ['folder']
             if verbose:
-                print('Augmentation args "{}"'.format(args_str), end=' ')
+                print('Augmentation args "{}"'.format(args_str))
         else:
             args_str = ''
 
@@ -321,8 +329,8 @@ def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
                             imx.save(file_path_dst, 'JPEG', quality=95)
                         else:
                             imx.save(file_path_dst, format_dst.upper())
-
-                row_entry = [file_name, file_name_dst] + list(args.values())
+                    
+                row_entry = [file_name, file_name_dst] + args_values
                 ids_list.append(row_entry)
                 
             except Exception as e:
@@ -332,5 +340,5 @@ def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
                 errors.append(file_name)
 
     ids_aug = pd.DataFrame(ids_list, 
-                           columns=['image_name','image_path']+list(args.keys()))
+                           columns=['image_name','image_path']+args_keys)
     return ids_aug, errors
