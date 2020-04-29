@@ -189,7 +189,7 @@ class ImageAugmenter(object):
         * ensure_min: if true, `size` is the minimum size allowed
                       a dimension is not changed unless it is below the minimum size
         * fit_frame: size concerns the dimensions of the frame that the image is to be 
-                     fitted in, while preserving its aspect ratio
+                     fitted into, while preserving its aspect ratio
         :return: self
         """
         imsz = self.image.shape[:2] # (height, width)
