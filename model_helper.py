@@ -436,7 +436,8 @@ class ModelHelper(object):
             r = self.model.evaluate(X_valid, y_valid, 
                                     batch_size=batch_size, 
                                     verbose=verbose)
-        perf_metrics = dict(list(zip(self.model.metrics_names, r)))
+        perf_metrics = dict(list(zip(self.model.metrics_names, 
+                                     force_list(r))))
         if verbose==2:
             pretty(OrderedDict((k, perf_metrics[k]) 
                                for k in sorted(perf_metrics.keys())))
