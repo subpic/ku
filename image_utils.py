@@ -266,10 +266,10 @@ def save_images_to_h5(image_path, h5_path, overwrite=False,
 
             
 def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
-                   overwrite=False, verbose=True, simulate=False):
+                   overwrite=False, verbose=True, simulate=False, file_list=None):
     """
     Augment an image folder, copying the augmented versions of the images to a new destination folder 
-    and returning a pd.DataFrame containing augmentation paths and parameters, and error images
+    and returning a pd.DataFrame containing augmentation paths and parameters
 
     * path_src: source folder path
     * path_dst: destination folder path, created if does not exist
@@ -279,16 +279,18 @@ def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
     * overwrite: enable to over-write destination images
     * verbose: display status information
     * simulate: generated ids pd.DataFrame, do not process/save images
-    :return: (ids type pd.DataFrame, list of error image names)
+    * file_list: list of files to be processed
+    :return: ids type pd.DataFrame
     """
     
-    file_list = glob_images(path_src, verbose=verbose)    
+    if file_list is None:
+        file_list = glob_images(path_src, verbose=verbose)
+    
     if not simulate:
         make_dirs(path_dst)
     if verbose:
         print('Augmenting images from "{}" to "{}"'.format(path_src, path_dst))
 
-    errors = []
     ids_list = []
 
     # args is a dict to be converted to a dir name, or is a string
@@ -311,34 +313,35 @@ def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
             if verbose:
                 show_progress(i, len(file_list), prefix='Augmenting')
 
-            try:
-                file_name = os.path.split(file_path_src)[1]
-                (file_body, file_ext) = os.path.splitext(file_name)
-                file_name_dst = '{}/{}.{}'.format(args_str, file_body, format_dst.lower())
-                file_path_dst = os.path.join(path_dst, file_name_dst)
 
-                if not simulate:
-                    im = img_to_array(load_img(file_path_src))
+            file_name = os.path.split(file_path_src)[1]
+            (file_body, file_ext) = os.path.splitext(file_name)
+            file_name_dst = '{}/{}.{}'.format(args_str, file_body, format_dst.lower())
+            file_path_dst = os.path.join(path_dst, file_name_dst)
 
-                    # check if image has already been processed
-                    if overwrite or not os.path.isfile(file_path_dst): 
-                        imx = array_to_img(process_fn(im))
+            if not simulate:
+                im = img_to_array(load_img(file_path_src))
 
-                        make_dirs(file_path_dst)
-                        if format_dst.lower() in ('jpg', 'jpeg'):
-                            imx.save(file_path_dst, 'JPEG', quality=95)
-                        else:
-                            imx.save(file_path_dst, format_dst.upper())
+                # check if image has already been processed
+                if overwrite or not os.path.isfile(file_path_dst):
+                    if isinstance(args, dict):
+                        args_ = updated_dict(args, file_name=file_name, 
+                                            only_existing=False)
+                        imx = array_to_img(process_fn(im, **args_))
+                    else:
+                        args_ = dict(file_name=file_name)
+                        imx = array_to_img(process_fn(im, **args_))
+
+                    make_dirs(file_path_dst)
+                    if format_dst.lower() in ('jpg', 'jpeg'):
+                        imx.save(file_path_dst, 'JPEG', quality=95)
+                    else:
+                        imx.save(file_path_dst, format_dst.upper())
                     
-                row_entry = [file_name, file_name_dst] + args_values
-                ids_list.append(row_entry)
+            row_entry = [file_name, file_name_dst] + args_values
+            ids_list.append(row_entry)
                 
-            except Exception as e:
-                if verbose:
-                    print('\nError processing:', file_name)
-                    print('Exception:', e)
-                errors.append(file_name)
-
+            
     ids_aug = pd.DataFrame(ids_list, 
                            columns=['image_name','image_path']+args_keys)
-    return ids_aug, errors
+    return ids_aug
