@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import multiprocessing as mp
 from munch import Munch
+import os, random
 from six import string_types
 import keras
 
@@ -165,13 +166,21 @@ class DataGeneratorDisk(keras.utils.Sequence):
             group_names = group_names[idx]
         
         if isinstance(params.data_path, string_types):
-            # get data for each input and add it to X_list            
-            for group_name in group_names:
+            # get data for each input and add it to X_list    
+            for group_name in group_names:                
+                if params.random_group:   
+                    group_path = os.path.join(params.data_path, group_name) or '.'
+                    subdir_names = [f for f in os.listdir(group_path) 
+                                    if os.path.isdir(os.path.join(group_path, f))]
+                    subgroup_name = random.choice(subdir_names)
+                else:
+                    subgroup_name = ''
+                
                 for input_name in params.inputs:
-                    data = []                    
+                    data = []
                     # read the data from disk into a list
                     for row in ids_batch.itertuples():
-                        input_data = group_name + getattr(row, input_name)                        
+                        input_data = os.path.join(group_name, subgroup_name, getattr(row, input_name))
                         if params.read_fn is None:
                             file_path = os.path.join(params.data_path, input_data)
                             file_data = read_image(file_path)

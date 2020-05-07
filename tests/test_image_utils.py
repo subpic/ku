@@ -43,13 +43,12 @@ def test_augment_folder():
 
     def process_gen():
         for num_patch in [(i,j) for i in [1,2,4,8] for j in [1,2,4,8]]:
-            fn = lambda im: aug.imshuffle(im, num_patch)
+            fn = lambda im, **kwargs: aug.imshuffle(im, num_patch)
             yield fn, dict(num_patch=num_patch)
 
-    ids_aug, errors = iu.augment_folder(path_src, path_dst, 
-                                        process_gen, verbose=True)
+    ids_aug = iu.augment_folder(path_src, path_dst, 
+                                process_gen, verbose=True)
 
-    assert len(errors)==0
     assert len(ids_aug)==64
 
     (image_path, ext) = os.path.split(ids_aug.iloc[0,:].image_path)

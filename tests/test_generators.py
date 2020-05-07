@@ -252,6 +252,23 @@ def test_group_names_DataGeneratorDisk():
 
     shutil.rmtree('images1/')
     
+def test_random_group_DataGeneratorDisk():
+  
+    iu.resize_folder('images/', 'base/images100/', image_size_dst=(100,100), overwrite=True)
+    iu.resize_folder('images/', 'base/images50/', image_size_dst=(50,50), overwrite=True)
+
+    gp = gen_params.copy()
+    gp.inputs       = ['filename']
+    gp.data_path    = ''
+    gp.group_names  = ['base']
+    gp.random_group = True
+    g = gr.DataGeneratorDisk(ids, **gp)
+    
+    assert np.array_equal(np.unique([x[0][0].shape[1] 
+                              for i in range(100) for x in g]), [50,100])
+    
+    shutil.rmtree('base/')
+    
 def test_basics_deterministic_shuffle_consistency_group_by():
 
     ids = pd.DataFrame(dict(a = range(10), 
