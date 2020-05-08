@@ -28,7 +28,7 @@ class ImageAugmenter(object):
     Provides various pre-defined customizable transformations, all randomizable:
     rotate, crop, fliplr, rescale, resize. The transformations can be easily chained.
     """
-    def __init__(self, image, remap=True, verbose=False):
+    def __init__(self, image, remap=False, verbose=False):
         """
         * image: image to be transformed, np.ndarray
         * remap: remap values to [0,1] for easier to apply transformations
