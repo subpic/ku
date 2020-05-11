@@ -431,7 +431,7 @@ def imshuffle(im, num_patches):
     * num_patches: (num_vertical, num_horizontal)
     """
     t = image_to_tiles(im, num_patches)
-    random.shuffle(t)
+    np.random.shuffle(t)
     return tiles_to_image(t, num_patches)
 
 def imshuffle_pair(im1, im2, num_patches, ratio=0.5, flip=False):
@@ -445,11 +445,11 @@ def imshuffle_pair(im1, im2, num_patches, ratio=0.5, flip=False):
     """
     t1 = image_to_tiles(im1, num_patches)
     t2 = image_to_tiles(im2, num_patches)
-    random.shuffle(t1)
-    random.shuffle(t2)
+    np.random.shuffle(t1)
+    np.random.shuffle(t2)
     counts = np.int32(np.round(len(t1)*ratio))
     t12 = t1[:counts] + t2[counts:]
-    random.shuffle(t12)    
+    np.random.shuffle(t12)
     if flip:
         for i, _ in enumerate(t12):
             if rand(1) > 0.5: 
