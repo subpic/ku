@@ -492,7 +492,7 @@ def download_data(data_url, data_root, cache_root=None,
                   delete_archive=False, verbose=False):
     archive_name = data_url.split('/')[-1]
     data_path = os.path.join(data_root, archive_name)
-    gen.make_dirs(data_root)
+    make_dirs(data_root)
 
     if cache_root:
         make_dirs(cache_root)
