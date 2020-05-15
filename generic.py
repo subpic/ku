@@ -487,9 +487,9 @@ def show_progress(iteration, total, prefix = '', suffix = '', decimals = 0,
     # Print New Line on Complete
     if iteration_ == total: 
         print()
-        
-def download_data(data_url, data_root, cache_root=None, 
-                  delete_archive=False, verbose=False):
+
+def download_archive(data_url, data_root, cache_root=None, 
+                     delete_archive=True, verbose=False):
     archive_name = data_url.split('/')[-1]
     data_path = os.path.join(data_root, archive_name)
     make_dirs(data_root)
