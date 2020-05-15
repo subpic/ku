@@ -8,6 +8,7 @@ from builtins import object
 import numpy as np, pandas as pd
 import multiprocessing as mp
 import os, scipy, h5py, time, sys
+import urllib.request, shutil, subprocess
 from munch import Munch
 from sklearn.model_selection import train_test_split
 
@@ -486,3 +487,34 @@ def show_progress(iteration, total, prefix = '', suffix = '', decimals = 0,
     # Print New Line on Complete
     if iteration_ == total: 
         print()
+        
+def download_data(data_url, data_root, cache_root=None, 
+                  delete_archive=False, verbose=False):
+    archive_name = data_url.split('/')[-1]
+    data_path = os.path.join(data_root, archive_name)
+    gen.make_dirs(data_root)
+
+    if cache_root:
+        make_dirs(cache_root)
+        cache_path = os.path.join(cache_root, archive_name)
+        if not os.path.exists(cache_path):
+            if verbose:
+                print('downloading {} via cache {}'.format(data_url, cache_path))
+            urllib.request.urlretrieve(data_url, cache_path)
+        if verbose:
+            print('copying {} to {}'.format(archive_name, data_root))
+        shutil.copy(cache_path, data_root)
+    else:
+        if not os.path.exists(data_path):
+            if verbose:
+                print('downloading {} to {}'.format(data_url, data_path))            
+            urllib.request.urlretrieve(data_url, data_path)
+
+    if verbose:
+        print('unpacking archive {} to {}'.format(archive_name, data_root))   
+    failed_command = subprocess.run(["unzip","-o",data_path,"-d",data_root], check=True)
+    if failed_command.returncode:
+        print("unzip failed: %d" % failed_command.returncode)
+        
+    if delete_archive:
+        os.unlink(data_path)
