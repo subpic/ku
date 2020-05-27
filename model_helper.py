@@ -175,13 +175,15 @@ class ModelHelper(object):
         """Setup callbacks"""
         
         p = self.params
-        log_dir = os.path.join(p.logs_root, self.model_name())
-        tb_callback = TensorBoard(log_dir        = log_dir,
-                                  write_graph    = p.write_graph, 
-                                  histogram_freq = 0,
-                                  write_images   = p.write_images)
-        
-        tb_callback.set_model(self.model)
+        if p.logs_root is not None:
+            log_dir = os.path.join(p.logs_root, self.model_name())
+            tb_callback = TensorBoard(log_dir        = log_dir,
+                                      write_graph    = p.write_graph, 
+                                      histogram_freq = 0,
+                                      write_images   = p.write_images)        
+            tb_callback.set_model(self.model)
+        else:
+            tb_callback = None
         
 #        separator = self.model_name._ShortNameBuilder__sep[1]
         best_model_path = os.path.join(p.models_root, 
@@ -198,7 +200,7 @@ class ModelHelper(object):
                                   patience = p.early_stop_patience, 
                                   mode     = p.monitor_mode)
         
-        return [tb_callback, earlystop, checkpointer]
+        return [earlystop, checkpointer] + ([tb_callback] if tb_callback else [])
 
 
     def _updated_gen_params(self, **kwargs):
