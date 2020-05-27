@@ -489,7 +489,7 @@ def show_progress(iteration, total, prefix = '', suffix = '', decimals = 0,
         print()
 
 def download_archive(data_url, data_root, cache_root=None, 
-                     delete_archive=True, verbose=False):
+                     delete_archive=True, verbose=False, archive_type=None):
     archive_name = data_url.split('/')[-1]
     data_path = os.path.join(data_root, archive_name)
     make_dirs(data_root)
@@ -499,7 +499,7 @@ def download_archive(data_url, data_root, cache_root=None,
         cache_path = os.path.join(cache_root, archive_name)
         if not os.path.exists(cache_path):
             if verbose:
-                print('downloading {} via cache {}'.format(data_url, cache_path))
+                print('downloading {} via cache {}'.format(data_url, cache_root))
             urllib.request.urlretrieve(data_url, cache_path)
         if verbose:
             print('copying {} to {}'.format(archive_name, data_root))
@@ -511,10 +511,18 @@ def download_archive(data_url, data_root, cache_root=None,
             urllib.request.urlretrieve(data_url, data_path)
 
     if verbose:
-        print('unpacking archive {} to {}'.format(archive_name, data_root))   
-    failed_command = subprocess.run(["unzip","-o",data_path,"-d",data_root], check=True)
+        print('unpacking archive {} to {}'.format(archive_name, data_root))
+       
+    if  archive_type is None:
+        archive_type = archive_name.split('.')[-1]
+        
+    if archive_type == 'zip':
+        failed_command = subprocess.run(["unzip","-qq","-o",data_path,"-d",data_root], check=True)
+    else:
+        failed_command = subprocess.run(["tar","-xf",data_path,"-C",data_root], check=True)
+        
     if failed_command.returncode:
-        print("unzip failed: %d" % failed_command.returncode)
+        print("unpack failed: %d" % failed_command.returncode)
         
     if delete_archive:
         os.unlink(data_path)
