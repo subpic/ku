@@ -8,7 +8,7 @@ from builtins import object
 import numpy as np, pandas as pd
 import multiprocessing as mp
 import os, scipy, h5py, time, sys
-import urllib.request, shutil, subprocess
+import urllib, shutil, subprocess
 from munch import Munch
 from sklearn.model_selection import train_test_split
 
