@@ -18,11 +18,6 @@ from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.applications.vgg16 import VGG16
 from keras.applications.nasnet import NASNetMobile
 
-if sys.version_info.major==3:
-    tf = K.tensorflow_backend.tf
-else:
-    tf = K.tf
-
 source_module = {
                  InceptionV3:       keras.applications.inception_v3,
                  DenseNet201:       keras.applications.densenet,
