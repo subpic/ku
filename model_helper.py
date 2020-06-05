@@ -101,7 +101,7 @@ class ModelHelper(object):
                                                                  # can changed during runtime
                             write_graph    = False,              # TensorBoard params
                             write_images   = False,              #
-                            logs_root      = 'None',             # TensorBoard logs
+                            logs_root      = None,               # TensorBoard logs
                             models_root    = 'models/',          # saved models path
                             features_root  = 'features/',        # saved features path (by `save_activations`)
                             gen_class      = None,               # generator class inferred from self.gen_params.data_path
@@ -285,7 +285,7 @@ class ModelHelper(object):
             if lr: self.params.lr = lr
             self.params.optimizer =\
                 update_config(self.params.optimizer,
-                              lr=self.params.lr)    
+                              lr=self.params.lr)
             self.compile()
 
         if self.verbose:
