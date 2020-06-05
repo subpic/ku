@@ -53,14 +53,12 @@ def fc_layers(input_layer,
     with dropouts on top of an input layer. Optionally batch normalize, add regularizers
     and an output activation.
 
-    e.g. default would look like dense(2048) > dropout
-
     * input_layer: input layer to the chain
     * name: prefix to each layer in the chain
     * fc_sizes: list of number of neurons in each fc-layer
     * dropout_rates: list of dropout rates for each fc-layer
     * batch_norm: 0 (False) = no batch normalization (BN),
-                  1 = do BN for all, 2 = do for all except the last
+                  1 = do BN for all, 2 = do for all except the last, ...
     * l2_norm_inputs: normalize the `input_layer` with L2_norm
     * kernel_regularizer: optional regularizer for each fc-layer
     * out_activation: activation added to the last fc-layer
@@ -97,7 +95,6 @@ def fc_layers(input_layer,
                 x = do_call(x, training=True)
             else:
                 x = do_call(x)
-                
     return x
 
 def conv2d_bn(x, filters, num_row, num_col, padding='same',
