@@ -28,6 +28,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
     * data_path  (string):    path of image folder
     * batch_size (int):       how many images to read at a time
     * shuffle (bool):         randomized reading order
+    * ids_fn (function):      returns an updated `ids` table, replacing `self.ids` at the end of each epoch
     * process_fn (function):  function applied to each image as it is read
     * read_fn (function):     function used to read data from a file (returns numpy.array)
                               if None, image_utils.read_image() is used (default)
@@ -48,7 +49,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
     def __init__(self, ids, data_path, **args):
         params_defa = Munch(ids           = ids,   data_path= data_path,
                             batch_size    = 32,    shuffle  = True,
-                            input_shape   = None, 
+                            input_shape   = None,  ids_fn   = None,
                             process_fn    = None,  read_fn  = None,
                             deterministic = None,  inputs   = [],
                             inputs_df     = None,  outputs  = [], 
@@ -91,7 +92,10 @@ class DataGeneratorDisk(keras.utils.Sequence):
 
     def on_epoch_end(self):
         """Updates batch selection after each epoch"""        
-                
+        
+        if self.ids_fn is not None:
+            self.ids = self.ids_fn()
+            
         if self.group_by:
             group_dict = dict(group_by=self.ids[self.group_by])
         else: 
@@ -101,7 +105,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
                                       index=self.ids.index.copy())
         self.ids_index['batch_index'] = -1
         
-        # initialize batch indexes        
+        # initialize batch indexes
         index = 0
         selectable = self.ids_index.batch_index == -1        
         while selectable.sum():
@@ -231,6 +235,7 @@ class DataGeneratorHDF5(DataGeneratorDisk):
     * data_path  (string):       path of HDF5 file
     * batch_size (int):          how many instances to read at a time
     * shuffle (bool):            randomized reading order
+    * ids_fn (function):         returns an updated `ids` table, replacing `self.ids` at the end of each epoch
     * process_fn (function):     function applied to each data instance as it is read
     * deterministic (None, int): random seed for shuffling order
     * inputs (strings list):     column names from `ids` containing data instance names, read from `data_path`
@@ -248,10 +253,10 @@ class DataGeneratorHDF5(DataGeneratorDisk):
     def __init__(self, ids, data_path, **args):
         params_defa = Munch(ids         = ids,   data_path     = data_path, deterministic = False,
                             batch_size  = 32,    shuffle       = True,   inputs        = [],
-                            inputs_df   = None,  outputs       = [],   memory_mapped = False,
+                            inputs_df   = None,  outputs       = [],     memory_mapped = False,
                             verbose     = False, fixed_batches = False,  random_group  = False,
                             process_fn  = None,  process_args  = None,   group_names   = None,
-                            input_shape = None,  group_by      = None)
+                            input_shape = None,  group_by      = None,   ids_fn        = None)
 
         check_keys_exist(args, params_defa)
         params = updated_dict(params_defa, **args) # update only existing       

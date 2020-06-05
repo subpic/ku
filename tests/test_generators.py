@@ -379,3 +379,19 @@ def test_accessor_function_numpy_array():
     gen_params.outputs = ['a','a']
     g = gr.DataGeneratorDisk(ids, **gen_params)
     assert gen.get_sizes(g[0])=='([array<4,1>], [array<4,2>])'
+    
+def test_ids_fn():
+    gen_params_local = gen_params.copy()
+    ids_local = ids.copy()
+    
+    def ids_fn():
+        ids_local.score = -ids_local.score
+        return ids_local
+
+    gen_params_local.ids_fn = ids_fn
+    gen_params_local.batch_size = 4
+    g = gr.DataGeneratorDisk(ids, **gen_params_local)
+    x = g[0][1][0]
+    g.on_epoch_end()
+    y = g[0][1][0]    
+    assert np.array_equal(-x, y)
