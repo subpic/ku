@@ -198,9 +198,11 @@ class DataGeneratorDisk(keras.utils.Sequence):
                     # if needed, process each image, and add to X_list (inputs list)
                     if params.process_fn not in [None, False]:                
                         data_list = []
-                        for i, row in enumerate(ids_batch.itertuples()):                    
-                            arg = [] if args_name is None else [getattr(row, args_name)]
-                            data_i = params.process_fn(data[i], *arg)
+                        for i, row in enumerate(ids_batch.itertuples()):
+                            args = []
+                            if args_name is not None:
+                                args = [getattr(row, name) for name in force_list(args_name)]         
+                            data_i = params.process_fn(data[i], *args)
                             data_list.append(force_list(data_i))
 
                         # transpose list, sublists become batches

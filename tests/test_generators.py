@@ -146,6 +146,22 @@ def test_process_args_DataGeneratorHDF5():
     assert np.array_equal(np.squeeze(g[0][0][1]), np.arange(1,5))
     assert np.array_equal(np.squeeze(g[0][1]), np.arange(1,5))
     
+def test_multi_process_args_DataGeneratorHDF5():
+    def preproc(im, arg1, arg2):
+        return np.zeros(1) + arg1 + arg2
+
+    gen_params_local = gen_params.copy()
+    gen_params_local.process_fn = preproc
+    gen_params_local.process_args  = {'filename': ['filename_args','filename_args']}
+    gen_params_local.batch_size = 4
+
+    ids_local = ids.copy()
+    ids_local['filename_args'] = range(len(ids_local))
+
+    g = gr.DataGeneratorDisk(ids_local, **gen_params_local)
+    x = g[0]
+    assert np.array_equal(np.squeeze(x[0][0].T), np.arange(4)*2)
+    
 def test_callable_outputs_DataGeneratorHDF5():
     d = {'features': [1, 2, 3, 4, 5],
          'mask': [1, 0, 1, 1, 0]}
