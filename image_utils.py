@@ -98,6 +98,14 @@ def read_image(image_path, image_size=1):
             x = transform.resize(x/255., new_size, mode='reflect')*255.
     return x
 
+def write_image(im_arr, dst_path, fmt='jpg'):    
+    im = array_to_img(im_arr)
+    make_dirs(dst_path)
+    if fmt.lower() in ('jpg', 'jpeg'):
+        im.save(dst_path, 'JPEG', quality=95)
+    else:
+        im.save(dst_path, fmt.upper())
+
 def read_image_batch(image_paths, image_size=None, as_list=False):
     """
     Reads image array of np.uint8 and shape (num_images, *image_shape)
