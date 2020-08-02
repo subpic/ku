@@ -35,7 +35,7 @@ def GPUMemoryCap(fraction=1):
 
 
 # Metrics and losses
-    
+
 def plcc_tf(x, y):
     """PLCC metric"""
     xc = x - K.mean(x)
@@ -89,3 +89,4 @@ def get_plcc_dist_loss(scores_array=[1., 2, 3, 4, 5]):
     def plcc_dist_loss(x, y):
         return (1-plcc_dist_tf(x, y))/2
     return plcc_dist_loss
+

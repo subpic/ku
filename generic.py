@@ -25,8 +25,8 @@ class H5Helper(object):
     Enables reading from random groups e.g. 'augmentation_type/file_name'
     such that the helper can be used during training Keras models.
     """
-    def __init__(self, file_name, file_mode=None, 
-                 memory_mapped=False, overwrite=False, 
+    def __init__(self, file_name, file_mode=None,
+                 memory_mapped=False, overwrite=False,
                  backing_store=False, verbose=False):
         """
         * file_name: HDF5 file path
@@ -46,7 +46,7 @@ class H5Helper(object):
         with self._lock:
             if memory_mapped:
                 # memory mapping via h5py built-ins
-                self.hf = h5py.File(file_name, _file_mode, driver='core', 
+                self.hf = h5py.File(file_name, _file_mode, driver='core',
                                     backing_store = backing_store)
             else:
                 self.hf = h5py.File(file_name, _file_mode)
@@ -68,9 +68,9 @@ class H5Helper(object):
         * dataset_names: list of strings
         * group_names:   None, or list of strings
         """
-        with self._lock:            
+        with self._lock:
             assert isinstance(dataset_names, list), "`dataset_names` is of type {} and should be `list`".format(type(dataset_names))
-                   
+
             hf = self.hf
             if group_names is None:
                 assert not isinstance(data, list),\
@@ -88,7 +88,7 @@ class H5Helper(object):
         # internal to the class
         name = dataset_names[0]
         data0 = reader[name][...]
-        data = np.empty((len(dataset_names),) + data0.shape, 
+        data = np.empty((len(dataset_names),) + data0.shape,
                         dtype=data0.dtype)
         data[0,...] = data0
         for i in range(1, len(dataset_names)):
@@ -96,7 +96,7 @@ class H5Helper(object):
                 show_progress(i, len(data), prefix='Reading datasets')
             data[i, ...] = reader[dataset_names[i]][...]
         return data
-  
+
     def read_data(self, dataset_names, group_names=None):
         """
         Read `dataset_names` from HDF5 file, optionally using `group_names`.
@@ -112,7 +112,7 @@ class H5Helper(object):
                 return self._read_datasets(hf, dataset_names)
             else:
                 return [self._read_datasets(hf[group_name], dataset_names)
-                        for group_name in group_names]        
+                        for group_name in group_names]
 
     def read_data_random_group(self, dataset_names):
         """
@@ -170,7 +170,7 @@ class H5Helper(object):
     @property
     def dataset_names(self):
         """
-        :return: list of dataset names 
+        :return: list of dataset names
                  (if groups are present, from the first group)
         """
         values = list(self.hf.values())
@@ -183,7 +183,7 @@ class H5Helper(object):
     def __del__(self):
         self.__exit__(None, None, None)
 
-    def __enter__(self): 
+    def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -192,7 +192,7 @@ class H5Helper(object):
             self.hf.close()
             del self.hf
             self.hf = None
-                
+
 
 def minmax(x):
     """
@@ -214,7 +214,7 @@ def mapmm(x, new_range = (0, 1)):
     :return: np.ndarray with values mapped to [new_range[0], new_range[1]]
     """
     mina, maxa = new_range
-    if not type(x) == np.ndarray: 
+    if not type(x) == np.ndarray:
         x = np.asfarray(x, dtype='float32')
     if x.dtype != np.float32:
         x = x.astype(np.float32)
@@ -230,8 +230,8 @@ def plcc(x, y):
 
 def srocc(xs, ys):
     """Spearman Rank Order Correlation Coefficient"""
-    xranks = pd.Series(xs).rank()    
-    yranks = pd.Series(ys).rank()    
+    xranks = pd.Series(xs).rank()
+    yranks = pd.Series(ys).rank()
     return plcc(xranks, yranks)
 srcc = srocc
 
@@ -242,14 +242,14 @@ def dist2mos(x, scale=np.arange(1, 6)):
     """
     x = old_div(x, np.reshape(np.sum(x*1., axis=1), (len(x), 1)))
     return np.sum(x * scale, axis=1)
-    
+
 def force_tuple(x):
     """Make tuple out of `x` if not already a tuple or `x` is None"""
     if x is not None and not isinstance(x, tuple):
         return (x,)
     else:
         return x
-    
+
 def force_list(x):
     """Make list out of `x` if not already a list or `x` is None"""
     if x is not None and not isinstance(x, list):
@@ -266,7 +266,7 @@ def make_dirs(filename):
         try:
             os.makedirs(os.path.dirname(filename))
         except: pass
-        
+
 def updated_dict(d, only_existing=True, **updates):
     """
     Update dictionary `d` with `updates`, optionally changing `only_existing` keys.
@@ -279,7 +279,7 @@ def updated_dict(d, only_existing=True, **updates):
     d = d.copy()
     if only_existing:
         common = {key: value for key, value in list(updates.items())
-                  if key in list(d.keys())}     
+                  if key in list(d.keys())}
         d.update(common)
     else:
         d.update(updates)
@@ -304,7 +304,7 @@ def pretty_print(d, indent=0, key_sep=':', trim=True):
     max_key_len = 0
     keys = list(d.keys())
     if isinstance(keys, list) and len(keys)>0:
-        max_key_len = max([len(str(k)) for k in keys])        
+        max_key_len = max([len(str(k)) for k in keys])
     for key, value in list(d.items()):
         equal_offset = ' '*(max_key_len - len(str(key)))
         print('\t' * indent + str(key) + key_sep, end=' ')
@@ -316,9 +316,9 @@ def pretty_print(d, indent=0, key_sep=':', trim=True):
             if trim:
                 value_str = ' '.join(value_str.split())
             if len(value_str) > 70:
-                value_str = value_str[:70] + ' [...]' 
+                value_str = value_str[:70] + ' [...]'
             print(equal_offset + value_str)
-            
+
 pretty = pretty_print
 
 class ShortNameBuilder(Munch):
@@ -328,7 +328,7 @@ class ShortNameBuilder(Munch):
 
     For internal use in ModelHelper.
     """
-    def __init__(self, prefix='', sep=('', '_'), 
+    def __init__(self, prefix='', sep=('', '_'),
                  max_len=32, **kwargs):
         self.__prefix  = prefix
         self.__sep     = sep
@@ -346,7 +346,7 @@ class ShortNameBuilder(Munch):
     def __call__(self, subset=None, **kwargs):
         self.update(**kwargs)
         return str(self)
-    
+
     def __str__(self):
         def combine(k, v):
             k = str(k)[:self.__max_len]
@@ -356,7 +356,7 @@ class ShortNameBuilder(Munch):
                self.__sep[1].join([combine(k, self[k])
                     for k in sorted(self.keys())
                     if '_ShortNameBuilder' not in k])
-    
+
 def check_keys_exist(new, old):
     """
     Check that keys in `new` dict existing in `old` dict.
@@ -369,7 +369,7 @@ def check_keys_exist(new, old):
     for key in list(new.keys()):
         if key not in list(old.keys()):
             raise Exception('Undefined parameter: "%s"' % key)
-            
+
 def get_sizes(x, array_marker='array'):
     """
     String representation of the shapes of arrays in lists/tuples.
@@ -383,17 +383,17 @@ def get_sizes(x, array_marker='array'):
     elif hasattr(x, 'shape'):
         return array_marker + '<' + ','.join(map(str, x.shape)) + '>'
     else: return '<1>'
-            
+
 def print_sizes(x, array_marker=''):
     """
     Prints get_sizes(x)
     """
     print(get_sizes(x, array_marker=array_marker))
-        
+
 def raw_confirm(message):
     """
     Ask for confirmation.
-    
+
     * message: message to show
     :return: true if confirmation given, false otherwise
     """
@@ -427,9 +427,9 @@ class Timer(object):
             print(('[%s]' % self.name), end=' ')
         print('elapsed: %s seconds' % round(time.time() - self.tstart, 4))
 
-        
-def partition_rows(t, test_size=0.2, set_name='set', 
-                   set_values=['training', 'test'], 
+
+def partition_rows(t, test_size=0.2, set_name='set',
+                   set_values=['training', 'test'],
                    random_state=None, copy=True):
     if copy: t = t.copy()
     t = t.reset_index(drop=True)
@@ -444,10 +444,10 @@ def array_overlap(a, b):
     """
     Returns indices of overlapping values in two arrays.
     From: https://www.followthesheep.com/?p=1366
-    """ 
+    """
     ia=np.argsort(a)
     ib=np.argsort(b)
-    
+
     # use searchsorted:
     sort_left_a  = a[ia].searchsorted(b[ib], side='left')
     sort_right_a = a[ia].searchsorted(b[ib], side='right')
@@ -465,7 +465,7 @@ def array_overlap(a, b):
 
 # Print iterations progress
 # Source: https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-def show_progress(iteration, total, prefix = '', suffix = '', decimals = 0, 
+def show_progress(iteration, total, prefix = '', suffix = '', decimals = 0,
                   length = 50, fill = '=', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar
@@ -485,10 +485,10 @@ def show_progress(iteration, total, prefix = '', suffix = '', decimals = 0,
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = printEnd)
     # Print New Line on Complete
-    if iteration_ == total: 
+    if iteration_ == total:
         print()
 
-def download_archive(data_url, data_root, cache_root=None, 
+def download_archive(data_url, data_root, cache_root=None,
                      delete_archive=True, verbose=False, archive_type=None):
     archive_name = data_url.split('/')[-1]
     data_path = os.path.join(data_root, archive_name)
@@ -507,22 +507,23 @@ def download_archive(data_url, data_root, cache_root=None,
     else:
         if not os.path.exists(data_path):
             if verbose:
-                print('downloading {} to {}'.format(data_url, data_path))            
+                print('downloading {} to {}'.format(data_url, data_path))
             urllib.request.urlretrieve(data_url, data_path)
 
     if verbose:
         print('unpacking archive {} to {}'.format(archive_name, data_root))
-       
+
     if  archive_type is None:
         archive_type = archive_name.split('.')[-1]
-        
+
     if archive_type == 'zip':
         failed_command = subprocess.run(["unzip","-qq","-o",data_path,"-d",data_root], check=True)
     else:
         failed_command = subprocess.run(["tar","-xf",data_path,"-C",data_root], check=True)
-        
+
     if failed_command.returncode:
         print("unpack failed: %d" % failed_command.returncode)
-        
+
     if delete_archive:
         os.unlink(data_path)
+

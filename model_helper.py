@@ -35,7 +35,7 @@ class ModelHelper(object):
     (usually named `ids`, as they contain the IDs of data rows) for extracting data instances
     for all operations (train/validation/test).
     """
-    def __init__(self, model, root_name, ids, 
+    def __init__(self, model, root_name, ids,
                  gen_params={}, verbose=False, **params):
         """
         * model:      Keras model, compilation will be done at runtime.
@@ -57,10 +57,10 @@ class ModelHelper(object):
         workers        = 5,        #
         max_queue_size = 10,       #
         monitor_metric      = 'val_loss',  # monitoring params
-        monitor_mode        = 'min',       #       
-        early_stop_patience = 20,          #       
-        checkpoint_period   = 1,           #       
-        save_best_only      = True,        #       
+        monitor_mode        = 'min',       #
+        early_stop_patience = 20,          #
+        checkpoint_period   = 1,           #
+        save_best_only      = True,        #
         optimizer      = optimizers.Adam(),  # optimizer object
         write_graph    = False,              # TensorBoard params
         write_images   = False,              #
@@ -79,7 +79,7 @@ class ModelHelper(object):
         self.model_cpu = None
 
         self.gen_params = Munch(shuffle       = True,  process_fn = False,
-                                deterministic = False, verbose    = verbose, 
+                                deterministic = False, verbose    = verbose,
                                 batch_size    = 32)
         self.params = Munch(lr   = 1e-4,               # learning rate
                             loss = "MSE",              # loss function
@@ -96,7 +96,7 @@ class ModelHelper(object):
                             early_stop_patience = 20,          #
                             checkpoint_period   = 1,           #
                             save_best_only      = True,        #
-                            
+
                             optimizer      = optimizers.Adam(),  # optimizer object, its parameters
                                                                  # can changed during runtime
                             write_graph    = False,              # TensorBoard params
@@ -112,22 +112,22 @@ class ModelHelper(object):
             if key not in list(self.params.keys()):
                 raise Exception('Undefined parameter:' + key)
 
-        self.gen_params.update(gen_params)        
+        self.gen_params.update(gen_params)
         self.params = updated_dict(self.params, **params)
 
-        # infer default generator class to use 
+        # infer default generator class to use
         # if params is not set yet
         if self.params.gen_class is None:
             # if has 'data_path' attribute
-            if getattr(self.gen_params, 'data_path', None) is not None: 
+            if getattr(self.gen_params, 'data_path', None) is not None:
                 if self.gen_params.data_path[-3:] == '.h5':
                     self.params.gen_class = DataGeneratorHDF5
                 else:
                     self.params.gen_class = DataGeneratorDisk
             else:
                 raise ValueError("Cannot infer generator class")
-        
-        self.callbacks = None       
+
+        self.callbacks = None
         self.set_model_name()
 
     def update_name(self, **kwargs):
@@ -136,15 +136,15 @@ class ModelHelper(object):
         self.set_model_name()
         # update new parameters
         self.model_name(**kwargs)
-        
+
         # always use custom callbacks, if defined
-        if isinstance(self.params.callbacks, list):            
-            self.callbacks = self.params.callbacks        
+        if isinstance(self.params.callbacks, list):
+            self.callbacks = self.params.callbacks
         else: # reset callbacks to use new model name
             self.callbacks = self.set_callbacks()
-            
+
         return self.model_name
-    
+
     def set_model_name(self):
         """Update model name based on parameters in self. gen_params, params and model"""
         h = self
@@ -152,13 +152,13 @@ class ModelHelper(object):
         format_size = lambda x: '[{}]'.format(','.join(map(tostr, x)))
         loss2str = lambda x: (x if isinstance(x, (str, bytes)) else x.__name__)[:9]
 
-        loss = h.params.loss        
+        loss = h.params.loss
         if not isinstance(loss, dict):
             loss_str = loss2str(loss)
         else:
-            loss_str = '[%s]' % ','.join(map(loss2str, list(loss.values())))            
+            loss_str = '[%s]' % ','.join(map(loss2str, list(loss.values())))
         i = '{}{}'.format(len(h.model.inputs),
-                           format_size(h.gen_params.input_shape))        
+                           format_size(h.gen_params.input_shape))
         if h.model.outputs:
             o = '{}{}'.format(len(h.model.outputs),
                               format_size(h.model.outputs[0].shape[1:].as_list()))
@@ -168,38 +168,38 @@ class ModelHelper(object):
                     l   = loss_str,
                     bsz = h.gen_params.batch_size)
         self.model_name.update(name)
-        
+
         return self.model_name
-    
+
     def set_callbacks(self):
         """Setup callbacks"""
-        
+
         p = self.params
         if p.logs_root is not None:
             log_dir = os.path.join(p.logs_root, self.model_name())
             tb_callback = TensorBoard(log_dir        = log_dir,
-                                      write_graph    = p.write_graph, 
+                                      write_graph    = p.write_graph,
                                       histogram_freq = 0,
-                                      write_images   = p.write_images)        
+                                      write_images   = p.write_images)
             tb_callback.set_model(self.model)
         else:
             tb_callback = None
-        
+
 #        separator = self.model_name._ShortNameBuilder__sep[1]
-        best_model_path = os.path.join(p.models_root, 
+        best_model_path = os.path.join(p.models_root,
                                        self.model_name() + '_best_weights.h5')
         make_dirs(best_model_path)
         checkpointer = ModelCheckpoint(filepath = best_model_path, verbose=0,
-                                       monitor  = p.monitor_metric, 
-                                       mode     = p.monitor_mode, 
+                                       monitor  = p.monitor_metric,
+                                       mode     = p.monitor_mode,
                                        period   = p.checkpoint_period,
                                        save_best_only    = p.save_best_only,
                                        save_weights_only = True)
-        
-        earlystop = EarlyStopping(monitor  = p.monitor_metric, 
-                                  patience = p.early_stop_patience, 
+
+        earlystop = EarlyStopping(monitor  = p.monitor_metric,
+                                  patience = p.early_stop_patience,
                                   mode     = p.monitor_mode)
-        
+
         return [earlystop, checkpointer] + ([tb_callback] if tb_callback else [])
 
 
@@ -207,7 +207,7 @@ class ModelHelper(object):
         params = copy.deepcopy(self.gen_params)
         params.update(kwargs)
         return params
-    
+
     def make_generator(self, ids, subset=None, **kwargs):
         """
         Create a generator of `self.params.gen_class` using new `ids`.
@@ -250,16 +250,16 @@ class ModelHelper(object):
         * gpus: number of GPUs to use, defaults to all.
         """
         self.model_cpu = self.model
-        self.model = multi_gpu_model(self.model, gpus=gpus)        
+        self.model = multi_gpu_model(self.model, gpus=gpus)
 
     def compile(self):
-        self.model.compile(optimizer    = self.params.optimizer, 
-                           loss         = self.params.loss, 
-                           loss_weights = self.params.loss_weights, 
+        self.model.compile(optimizer    = self.params.optimizer,
+                           loss         = self.params.loss,
+                           loss_weights = self.params.loss_weights,
                            metrics      = self.params.metrics)
-        
-    def train(self, train_gen=True, valid_gen=True, 
-              lr=1e-4, epochs=1, valid_in_memory=False, 
+
+    def train(self, train_gen=True, valid_gen=True,
+              lr=1e-4, epochs=1, valid_in_memory=False,
               recompile=True, verbose=True):
         """
         Run training iterations on existing model.
@@ -273,14 +273,14 @@ class ModelHelper(object):
         """
         ids = self.ids
         print('Training model:', self.model_name())
-        
+
         if train_gen is True:
             train_gen = self.make_generator(ids[ids.set == 'training'])
         if valid_gen is True:
             valid_gen = self.make_generator(ids[ids.set == 'validation'],
                                             shuffle       = True,
                                             deterministic = True)
-        
+
         if recompile:
             if lr: self.params.lr = lr
             self.params.optimizer =\
@@ -304,28 +304,28 @@ class ModelHelper(object):
             valid_steps = 1
         else:
             valid_data = valid_gen
-            if issubclass(type(valid_gen), 
+            if issubclass(type(valid_gen),
                           keras.utils.Sequence):
                 valid_steps = len(valid_gen)
             else:
                 valid_steps = 1
-        
+
         # always use custom callbacks, if defined
-        if isinstance(self.params.callbacks, list):            
+        if isinstance(self.params.callbacks, list):
             self.callbacks = self.params.callbacks
         # set callbacks if first run, otherwise do not reset
         elif self.callbacks is None:
             self.callbacks = self.set_callbacks()
-                            
-        if issubclass(type(train_gen), 
-                      keras.utils.Sequence): 
-            # train using the generator            
+
+        if issubclass(type(train_gen),
+                      keras.utils.Sequence):
+            # train using the generator
             history = self.model.fit_generator(
                              train_gen, epochs = epochs,
                              steps_per_epoch   = len(train_gen),
-                             validation_data   = valid_data, 
+                             validation_data   = valid_data,
                              validation_steps  = valid_steps,
-                             workers           = self.params.workers, 
+                             workers           = self.params.workers,
                              callbacks         = self.callbacks,
                              max_queue_size    = self.params.max_queue_size,
                              class_weight      = self.params.class_weights,
@@ -333,13 +333,13 @@ class ModelHelper(object):
                              verbose             = verbose)
         else:
             # training data is passed in train_gen
-            X, y = train_gen            
+            X, y = train_gen
             steps_per_epoch = X.shape[0]//self.gen_params.batch_size
-            
+
             history = self.model.fit(X, y,
                              batch_size      = self.gen_params.batch_size,
                              epochs          = epochs,
-                             callbacks       = self.callbacks,                
+                             callbacks       = self.callbacks,
                              validation_data = valid_data,
                              shuffle         = self.gen_params.shuffle,
                              class_weight    = self.params.class_weights,
@@ -371,13 +371,13 @@ class ModelHelper(object):
             print('Found model(s):')
             print(model_files)
             if force or raw_confirm('Delete?'):
-                for mf in model_files: 
+                for mf in model_files:
                     print('Deleting', mf)
                     os.unlink(mf)
         else:
             print('(No models found)')
-        
-    def predict(self, test_gen=None, output_layer=None, 
+
+    def predict(self, test_gen=None, output_layer=None,
                 repeats=1, batch_size=None, remodel=True):
         """
         Predict on `test_gen`.
@@ -390,14 +390,14 @@ class ModelHelper(object):
         :return:        if `repeats` == 1 then `np.ndarray` else `list[np.ndarray]`
         """
         if not test_gen:
-            params_test = self._updated_gen_params(shuffle       = False, 
+            params_test = self._updated_gen_params(shuffle       = False,
                                                    fixed_batches = False)
             if batch_size: params_test.batch_size = batch_size
             test_gen = self.params.gen_class(self.ids[self.ids.set == 'test'],
                                              **params_test)
         if output_layer is not None and remodel:
                 # get last partial-matching layer
-                layer_name = [l.name for l in self.model.layers 
+                layer_name = [l.name for l in self.model.layers
                               if output_layer in l.name][-1]
                 output_layer = self.model.get_layer(layer_name)
                 print('Output of layer:', output_layer.name)
@@ -406,9 +406,9 @@ class ModelHelper(object):
                 else:
                     outputs = output_layer.output
                 print('Output tensor:', outputs)
-                model = Model(inputs  = self.model.input, 
+                model = Model(inputs  = self.model.input,
                               outputs = outputs)
-        else: 
+        else:
             model = self.model
 
         preds = []
@@ -419,31 +419,31 @@ class ModelHelper(object):
                 y_pred = dict(list(zip(model.output_names, y_pred)))[output_layer]
             preds.append(y_pred)
         return preds[0] if repeats == 1 else preds
-    
-    def validate(self, valid_gen=True, verbose=2, 
+
+    def validate(self, valid_gen=True, verbose=2,
                  batch_size=32, recompile=True):
         if valid_gen is True:
             ids = self.ids
             valid_gen = self.make_generator(ids[ids.set == 'validation'],
                                             shuffle       = True,
-                                            deterministic = True)        
+                                            deterministic = True)
         print('Validating performance')
         if recompile: self.compile()
 
-        if issubclass(type(valid_gen), keras.utils.Sequence): 
+        if issubclass(type(valid_gen), keras.utils.Sequence):
             r = self.model.evaluate_generator(valid_gen,
                                               verbose=verbose)
         else:
             X_valid, y_valid = valid_gen
-            r = self.model.evaluate(X_valid, y_valid, 
-                                    batch_size=batch_size, 
+            r = self.model.evaluate(X_valid, y_valid,
+                                    batch_size=batch_size,
                                     verbose=verbose)
-        perf_metrics = dict(list(zip(self.model.metrics_names, 
+        perf_metrics = dict(list(zip(self.model.metrics_names,
                                      force_list(r))))
         if verbose==2:
-            pretty(OrderedDict((k, perf_metrics[k]) 
+            pretty(OrderedDict((k, perf_metrics[k])
                                for k in sorted(perf_metrics.keys())))
-        return perf_metrics 
+        return perf_metrics
 
     def set_trainable(self, index):
         """
@@ -456,7 +456,7 @@ class ModelHelper(object):
         for layer in self.model.layers[index:]:
             layer.trainable = True
 
-    def load_model(self, model_name='', best=True, 
+    def load_model(self, model_name='', best=True,
                    from_weights=True, by_name=False, verbose=1):
         """
         Load model from file.
@@ -468,7 +468,7 @@ class ModelHelper(object):
         :return:        true if model was loaded successfully, otherwise false
         """
         model_name = model_name or self.model_name()
-        model_file_name = (model_name + ('_best' if best else '_final') + 
+        model_file_name = (model_name + ('_best' if best else '_final') +
                           ('_weights' if from_weights else '') + '.h5')
         model_path = os.path.join(self.params.models_root, model_file_name)
         if not os.path.exists(model_path):
@@ -486,7 +486,7 @@ class ModelHelper(object):
                     print('Model loaded:', model_file_name)
             return True
 
-    def save_model(self, weights_only=False, model=None, 
+    def save_model(self, weights_only=False, model=None,
                    name_extras='', best=False, verbose=1):
         """
         Save model to HDF5 file.
@@ -540,15 +540,15 @@ class ModelHelper(object):
             groups_count = len(groups)
             groups_list  = list(map(str, groups))
 
-        if file_path is None:         
+        if file_path is None:
             short_name = self.model_name.subset(['i', 'o'])
             short_name(grp = groups_count,
                        lay = (output_layer or 'final'))
-            file_path = os.path.join(self.params.features_root, 
+            file_path = os.path.join(self.params.features_root,
                                      str(short_name) + name_suffix + '.h5')
             make_dirs(file_path)
 
-        params = self._updated_gen_params(shuffle       = False, 
+        params = self._updated_gen_params(shuffle       = False,
                                           verbose       = verbose,
                                           fixed_batches = False,
                                           group_by      = None)
@@ -559,21 +559,21 @@ class ModelHelper(object):
         data_gen = self.make_generator(ids, **params)
 
         for group_name in groups_list:
-            activ = self.predict(data_gen, 
+            activ = self.predict(data_gen,
                                  output_layer = output_layer)
             activ = activ.astype(save_as_type)
             if len(activ.shape)==1:
-                activ = np.expand_dims(activ, 0)            
+                activ = np.expand_dims(activ, 0)
             if postprocess_fn:
                 activ = postprocess_fn(activ)
-                
-            with H5Helper(file_path, 
-                          overwrite = overwrite, 
+
+            with H5Helper(file_path,
+                          overwrite = overwrite,
                           verbose   = verbose) as h:
                 if groups == 1:
                     h.write_data(activ, list(ids.loc[:,data_gen.inputs[0]]))
                 else:
-                    h.write_data([activ], list(ids.loc[:,data_gen.inputs[0]]), 
+                    h.write_data([activ], list(ids.loc[:,data_gen.inputs[0]]),
                                  group_names=[group_name])
             del activ
 
@@ -581,7 +581,7 @@ class ModelHelper(object):
                       save_as_type = np.float32, overwrite = False):
         """
         Save augmented features to HDF5 file.
-        
+
         * process_gen: if function: applies `process_gen` as `self.gen_params.preprocess_fn`
                        if generator: defines `preprocess_fn` functions to use for each augmentation
         * batch_size: batch size used for storing activations (in an `np.ndarray`)
@@ -595,14 +595,14 @@ class ModelHelper(object):
             process_gen = [(process_gen,None)]
         else:
             process_gen = process_gen()
-        
+
         first_verbose = 2
         for (process_fn, args) in process_gen:
             self.gen_params.process_fn = process_fn
             if args:
                 if isinstance(args, dict):
                     arg_str = ', '.join(['{}:{}'.format(*a) for a in args.items()])
-                else: 
+                else:
                     arg_str = str(args)
                 print('Augmentation args "' + arg_str + '"')
 
@@ -612,7 +612,7 @@ class ModelHelper(object):
                 print('\nImages',i,':',istop)
                 ids_batch = ids.iloc[i:istop]
 
-                self.save_activations(ids=ids_batch, verbose = first_verbose, 
+                self.save_activations(ids=ids_batch, verbose = first_verbose,
                                       groups       = [arg_str] if args else 1,
                                       save_as_type = save_as_type,
                                       overwrite    = overwrite)
@@ -653,3 +653,4 @@ def get_activations(im, model, layer):
     act = fn([0] + [im])
     act = np.squeeze(act)
     return act
+

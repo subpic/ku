@@ -21,7 +21,7 @@ from keras.applications.nasnet import NASNetMobile
 source_module = {
                  InceptionV3:       keras.applications.inception_v3,
                  DenseNet201:       keras.applications.densenet,
-                 ResNet50:          keras.applications.resnet50,       
+                 ResNet50:          keras.applications.resnet50,
                  InceptionResNetV2: keras.applications.inception_resnet_v2,
                  VGG16:             keras.applications.vgg16,
                  NASNetMobile:      keras.applications.nasnet
@@ -42,7 +42,7 @@ def fc_layers(input_layer,
               fc_sizes           = [2048, 1024, 256, 1],
               dropout_rates      = [0.25, 0.25, 0.5, 0],
               batch_norm         = False,
-              l2_norm_inputs     = False,              
+              l2_norm_inputs     = False,
               activation         = 'relu',
               initialization     = 'he_normal',
               out_activation     = 'linear',
@@ -75,7 +75,7 @@ def fc_layers(input_layer,
         dropout_call = AlphaDropout
     else:
         dropout_call = Dropout
-        
+
     for i in range(len(fc_sizes)):
         if i < len(fc_sizes)-1:
             act = activation
@@ -83,14 +83,14 @@ def fc_layers(input_layer,
         else:
             act  = out_activation
             layer_type = 'out'
-        x = Dense(fc_sizes[i], activation=act, 
+        x = Dense(fc_sizes[i], activation=act,
                   name='%s_%s' % (name, layer_type),
-                  kernel_initializer=initialization, 
+                  kernel_initializer=initialization,
                   **fc_params)(x)
         if batch_norm > 0 and i < ( len(fc_sizes)-(batch_norm-1) ):
             x = BatchNormalization(name='%s_bn%d' % (name, i))(x)
         if dropout_rates is not None and dropout_rates[i] > 0:
-            do_call = dropout_call(dropout_rates[i], name = '%s_do%d' % (name, i))            
+            do_call = dropout_call(dropout_rates[i], name = '%s_do%d' % (name, i))
             if test_time_dropout:
                 x = do_call(x, training=True)
             else:
@@ -101,7 +101,7 @@ def conv2d_bn(x, filters, num_row, num_col, padding='same',
               strides=(1, 1), name=None):
     """
     Utility function to apply conv + BN.
-    
+
     * x:       input tensor.
     * filters: filters in `Conv2D`.
     * num_row: height of the convolution kernel.
@@ -134,7 +134,7 @@ def conv2d_bn(x, filters, num_row, num_col, padding='same',
 
 def inception_block(x, size=768, name=''):
     channel_axis = 3
-    
+
     branch1x1 = conv2d_bn(x, size, 1, 1, name=name+'branch_1x1')
 
     branch3x3 = conv2d_bn(x, size, 1, 1, name=name+'3x3_1x1')
@@ -145,12 +145,12 @@ def inception_block(x, size=768, name=''):
         axis=channel_axis,
         name=name+'branch_3x3')
 
-    branch_pool = AveragePooling2D((3, 3), strides=(1, 1), 
-                                   padding='same', 
+    branch_pool = AveragePooling2D((3, 3), strides=(1, 1),
+                                   padding='same',
                                    name=name+'avg_pool_2d')(x)
-    branch_pool = conv2d_bn(branch_pool, size, 1, 1, 
+    branch_pool = conv2d_bn(branch_pool, size, 1, 1,
                             name=name+'branch_pool')
-    
+
     y = concatenate(
         [branch1x1, branch3x3, branch_pool],
         axis=channel_axis,
@@ -171,14 +171,14 @@ def model_inception_multigap(input_shape=(224, 224, 3), return_sizes=False,
     """
     print('Loading InceptionV3 multi-gap with input_shape:', input_shape)
 
-    model_base = InceptionV3(weights     = 'imagenet', 
-                             include_top = False, 
+    model_base = InceptionV3(weights     = 'imagenet',
+                             include_top = False,
                              input_shape = input_shape)
     print('Creating multi-GAP model')
-    
+
     gap_name = name + '_' if name else ''
 
-    feature_layers = [model_base.get_layer('mixed%d' % i) 
+    feature_layers = [model_base.get_layer('mixed%d' % i)
                       for i in indexes]
     gaps = [GlobalAveragePooling2D(name=gap_name+"gap%d" % i)(l.output)
             for i, l in zip(indexes, feature_layers)]
@@ -188,7 +188,7 @@ def model_inception_multigap(input_shape=(224, 224, 3), return_sizes=False,
                   outputs = concat_gaps)
     if name:
         model.name = name
-    
+
     if return_sizes:
         gap_sizes = [np.int32(g.get_shape()[1]) for g in gaps]
         return (model, gap_sizes)
@@ -211,7 +211,7 @@ def model_inceptionresnet_multigap(input_shape=(224, 224, 3),
                                    include_top=False,
                                    input_shape=input_shape)
     print('Creating multi-GAP model')
-    
+
     feature_layers = [l for l in model_base.layers if 'mixed' in l.name]
     gaps = [GlobalAveragePooling2D(name="gap%d" % i)(l.output)
             for i, l in enumerate(feature_layers)]
@@ -224,7 +224,7 @@ def model_inceptionresnet_multigap(input_shape=(224, 224, 3),
         return (model, gap_sizes)
     else:
         return model
-    
+
 def model_inception_pooled(input_shape=(None, None, 3), indexes=list(range(11)),
                            pool_size=(5, 5), name='', return_sizes=False):
     """
@@ -239,11 +239,11 @@ def model_inception_pooled(input_shape=(None, None, 3), indexes=list(range(11)),
     :return: model or (model, pool_sizes)
     """
     print('Loading InceptionV3 multi-pooled with input_shape:', input_shape)
-    model_base = InceptionV3(weights     = 'imagenet', 
-                             include_top = False, 
+    model_base = InceptionV3(weights     = 'imagenet',
+                             include_top = False,
                              input_shape = input_shape)
     print('Creating multi-pooled model')
-    
+
     ImageResizer = Lambda(lambda x: tf.image.resize_area(x, pool_size),
                           name='feature_resizer')
 
@@ -251,7 +251,7 @@ def model_inception_pooled(input_shape=(None, None, 3), indexes=list(range(11)),
     pools = [ImageResizer(l.output) for l in feature_layers]
     conc_pools = Concatenate(name='conc_pools', axis=3)(pools)
 
-    model = Model(inputs  = model_base.input, 
+    model = Model(inputs  = model_base.input,
                   outputs = conc_pools)
     if name: model.name = name
 
@@ -260,7 +260,7 @@ def model_inception_pooled(input_shape=(None, None, 3), indexes=list(range(11)),
         return model, pool_sizes
     else:
         return model
-    
+
 def model_inceptionresnet_pooled(input_shape=(None, None, 3), indexes=list(range(43)),
                                  pool_size=(5, 5), name='', return_sizes=False):
     """
@@ -273,15 +273,15 @@ def model_inceptionresnet_pooled(input_shape=(None, None, 3), indexes=list(range
     * return_sizes: return the sizes of each layer: (model, pool_sizes)
     :return: model or (model, pool_sizes)
     """
-    
+
     print('Loading InceptionResNetV2 multi-pooled with input_shape:', input_shape)
-    model_base = InceptionResNetV2(weights     = 'imagenet', 
-                                   include_top = False, 
+    model_base = InceptionResNetV2(weights     = 'imagenet',
+                                   include_top = False,
                                    input_shape = input_shape)
     print('Creating multi-pooled model')
-    
+
     ImageResizer = Lambda(lambda x: tf.image.resize_area(x, pool_size),
-                          name='feature_resizer') 
+                          name='feature_resizer')
 
     feature_layers = [l for l in model_base.layers if 'mixed' in l.name]
     feature_layers = [feature_layers[i] for i in indexes]
@@ -295,22 +295,22 @@ def model_inceptionresnet_pooled(input_shape=(None, None, 3), indexes=list(range
         pool_sizes = [[np.int32(x) for x in f.get_shape()[1:]] for f in pools]
         return model, pool_sizes
     else:
-        return model    
+        return model
 
 
 # ------------------
 # RATING model utils
 # ------------------
 
-def test_rating_model(helper, ids_test=None, 
-                      output_layer=None, output_column=None, 
+def test_rating_model(helper, ids_test=None,
+                      output_layer=None, output_column=None,
                       groups=1, remodel=False, show_plot=True):
     """
     Test rating model performance. The output of the mode is assumed to be
     either a single score, or distribution of scores (can be a histogram).
 
     * helper:   ModelHelper object that contains the trained model
-    * ids_test: optionally provide another set of data instances, replacing 
+    * ids_test: optionally provide another set of data instances, replacing
                 those in `helper.ids`
     * output_layer: the rating layer, if more than out output exists
                     if output_layer is None, we assume there is a single rating output
@@ -324,12 +324,12 @@ def test_rating_model(helper, ids_test=None,
     :return: (y_true, y_pred, SRCC, PLCC)
     """
     print('Model outputs:', helper.model.output_names)
-    if output_column is not None: 
+    if output_column is not None:
         print('Output column:', output_column)
     if ids_test is None: ids_test = helper.ids[helper.ids.set=='test']
 
     if isinstance(groups, numbers.Number):
-        test_gen = helper.make_generator(ids_test, 
+        test_gen = helper.make_generator(ids_test,
                                          shuffle = False,
                                          fixed_batches = False)
         y_pred = helper.predict(test_gen, repeats=groups, remodel=remodel,
@@ -351,20 +351,20 @@ def test_rating_model(helper, ids_test=None,
             y_pred.append(helper.predict(test_gen, repeats=1, remodel=remodel,
                                          output_layer=output_layer))
         print()
-    
+
     if isinstance(y_pred, list):
         y_pred = old_div(reduce(lambda x, y: (x+y), y_pred), len(y_pred))
 
     y_pred = np.squeeze(y_pred)
 
-    if y_pred.ndim == 2: 
+    if y_pred.ndim == 2:
         # for distributions
         print('Testing distributions')
         outputs = helper.gen_params.outputs
         y_pred = dist2mos(y_pred, scale=np.arange(1, len(outputs)+1))
         y_test = np.array(ids_test.loc[:, outputs])
         y_test = dist2mos(y_test, scale=np.arange(1, len(outputs)+1))
-    else:                 
+    else:
         # for single prediction
         print('Testing single prediction')
         if output_column is None:
@@ -377,17 +377,17 @@ def test_rating_model(helper, ids_test=None,
     # in case the last batch was not used, and dataset size
     # is not a multiple of batch_size
     y_test = y_test[:len(y_pred)]
-    
+
     SRCC_test = round(srocc(y_pred, y_test), 3)
     PLCC_test = round(plcc(y_pred, y_test), 3)
     print('SRCC/PLCC: {}/{}'.format(SRCC_test, PLCC_test))
-        
+
     if show_plot:
         plt.plot(y_pred, y_test, '.', markersize=0.5)
         plt.xlabel('predicted'); plt.ylabel('ground-truth'); plt.show()
     return y_test, y_pred, SRCC_test, PLCC_test
 
-def rating_metrics(y_true, y_pred, show_plot=True):    
+def rating_metrics(y_true, y_pred, show_plot=True):
     """
     Print out performance measures given ground-truth (`y_true`) and predicted (`y_pred`) scalar arrays.
     """
@@ -396,10 +396,10 @@ def rating_metrics(y_true, y_pred, show_plot=True):
     p_srcc = np.round(srcc(y_true, y_pred),3)
     p_mae  = np.round(np.mean(np.abs(y_true - y_pred)),3)
     p_rmse  = np.round(np.sqrt(np.mean((y_true - y_pred)**2)),3)
-    
+
     if show_plot:
         print('SRCC: {} | PLCC: {} | MAE: {} | RMSE: {}'.\
-              format(p_srcc, p_plcc, p_mae, p_rmse))    
+              format(p_srcc, p_plcc, p_mae, p_rmse))
         plt.plot(y_true, y_pred,'.',markersize=1)
         plt.xlabel('ground-truth')
         plt.ylabel('predicted')
@@ -407,7 +407,7 @@ def rating_metrics(y_true, y_pred, show_plot=True):
     return (p_srcc, p_plcc, p_mae, p_rmse)
 
 def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
-                        save_path=None, show_histograms=False, 
+                        save_path=None, show_histograms=False,
                         stratify=False, random_state=None):
     """
     Devise a train/validation/test partition for a pd.DataFrame
@@ -441,36 +441,36 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
     if not stratify:
         strata = None
     else:
-        strata = np.int32(mapmm(ids.loc[:, stratify_on], 
+        strata = np.int32(mapmm(ids.loc[:, stratify_on],
                                 (0, stratify-1-1e-6)))
-   
+
     idx_train_valid, idx_test = train_test_split(idx,
                                 test_size=test_size[1],
-                                random_state=random_state, 
+                                random_state=random_state,
                                 stratify=strata)
     strata_valid = None if strata is None else strata[idx_train_valid]
     idx_train, idx_valid = train_test_split(idx_train_valid,
-                           test_size=test_size[0], 
+                           test_size=test_size[0],
                            random_state=random_state,
                            stratify=strata_valid)
 
     print('Train size: {}, Validation size: {}, Test size: {}'.\
           format(len(idx_train), len(idx_valid), len(idx_test)))
-    
+
     ids.loc[idx_train, 'set'] = 'training'
     ids.loc[idx_valid, 'set'] = 'validation'
     ids.loc[idx_test,  'set'] = 'test'
     if save_path is not None:
         ids.to_csv(save_path, index=False)
-        
+
     if show_histograms:
-        plt.hist(ids.loc[idx_train, stratify_on], density=True, 
+        plt.hist(ids.loc[idx_train, stratify_on], density=True,
                  facecolor='g', alpha=0.75, bins=100)
         plt.show()
-        plt.hist(ids.loc[idx_valid, stratify_on], density=True, 
+        plt.hist(ids.loc[idx_valid, stratify_on], density=True,
                  facecolor='b', alpha=0.75, bins=100)
         plt.show()
-        plt.hist(ids.loc[idx_test, stratify_on], density=True, 
+        plt.hist(ids.loc[idx_test, stratify_on], density=True,
                  facecolor='r', alpha=0.75, bins=100)
         plt.show()
 
@@ -481,10 +481,10 @@ def get_train_test_sets(ids, stratify_on='MOS', test_size=(0.2, 0.2),
 # To be OBSOLETED
 # ---------------
 
-def get_model_imagenet(net_name, input_shape=None, 
+def get_model_imagenet(net_name, input_shape=None,
                        plot=False, **kwargs):
     """Returns ImageNet models"""
-    
+
     print('Loading model', net_name if isinstance(net_name, str)\
                                     else net_name.__name__)
 
@@ -492,19 +492,19 @@ def get_model_imagenet(net_name, input_shape=None,
         base_model = ResNet50(weights='imagenet', include_top=False,
                               input_shape=input_shape, **kwargs)
         feats = base_model.layers[-2]
-        
+
     elif net_name == NASNetMobile or net_name == 'NASNetMobile':
         base_model = NASNetMobile(weights='imagenet',
                                   include_top=True,
                                   input_shape=input_shape, **kwargs)
         feats = base_model.layers[-3]
-        
+
     elif net_name in list(source_module.keys()):
         base_model = net_name(weights='imagenet', include_top=False,
                               input_shape=input_shape, **kwargs)
         feats = base_model.layers[-1]
-        
-    else:        
+
+    else:
         raise Exception('Unknown model ' + net_name.__name__)
 
     gap = GlobalAveragePooling2D(name="final_gap")(feats.output)
@@ -513,3 +513,4 @@ def get_model_imagenet(net_name, input_shape=None,
     if plot: plot_model(base_model, show_shapes=True,
                         to_file='plots/{}_model.png'.format(net_name.__name__))
     return model, process_input[net_name]
+
