@@ -3,12 +3,14 @@ from __future__ import division
 from builtins import map
 from past.utils import old_div
 import os, sys
-from keras import backend as K
+import tensorflow as tf
+from tensorflow.keras import backend as K
 
-if sys.version_info.major==3:
-    tf = K.tensorflow_backend.tf
-else:
-    tf = K.tf
+# legacy, to be removed?
+#if sys.version_info.major==3:
+#    tf = K.tensorflow_backend.tf
+#else:
+#    tf = K.tf
 
 # Keras configuration directives
 def SetActiveGPU(number=0):
@@ -35,7 +37,7 @@ def GPUMemoryCap(fraction=1):
 
 
 # Metrics and losses
-    
+
 def plcc_tf(x, y):
     """PLCC metric"""
     xc = x - K.mean(x)
@@ -89,3 +91,4 @@ def get_plcc_dist_loss(scores_array=[1., 2, 3, 4, 5]):
     def plcc_dist_loss(x, y):
         return (1-plcc_dist_tf(x, y))/2
     return plcc_dist_loss
+

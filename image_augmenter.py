@@ -40,7 +40,7 @@ class ImageAugmenter(object):
         self._remap = remap
         self.image = image if not self._remap else mapmm(image)
         self.verbose = verbose
-        
+
     def rotate(self, angle, random=True):
         """
         Rotate self.image
@@ -55,13 +55,13 @@ class ImageAugmenter(object):
             self._rotation_angle += (rand(1)-0.5)*2*angle
         else:
             self._rotation_angle += angle
-            
-        self.image = transform.rotate(self.image, self._rotation_angle, 
-                                      resize=False, cval=0, 
-                                      clip=True, preserve_range=True, 
-                                      mode='symmetric')            
+
+        self.image = transform.rotate(self.image, self._rotation_angle,
+                                      resize=False, cval=0,
+                                      clip=True, preserve_range=True,
+                                      mode='symmetric')
         return self
-    
+
     def crop(self, crop_size, crop_pos=None, clip_rotation=False):
         """
         Crop a patch out of self.image. Relies on `extract_patch`.
@@ -79,34 +79,34 @@ class ImageAugmenter(object):
         # if using a ratio crop, compute actual crop size
         crop_size = [np.int32(c*dim) if 0 < c <= (1+1e-6) else c\
                      for c, dim in zip(crop_size, self.image.shape[:2])]
-        
+
         if self.verbose:
             print('image_size:', self.image.shape, 'crop_size:', crop_size)
 
         if crop_pos is None:
             if crop_size != self.image.shape[:2]:
                 if clip_rotation:
-                    lrr = largest_rotated_rect(self.image.shape[0], 
-                                               self.image.shape[1], 
+                    lrr = largest_rotated_rect(self.image.shape[0],
+                                               self.image.shape[1],
                                                math.radians(self._rotation_angle))
                     x, y = self.image.shape, lrr
                     border = (old_div((x[0]-y[0]),2), old_div((x[1]-y[1]),2))
                 else:
                     border = (0, 0)
                 self.image = extract_random_patch(self.image,
-                                                  patch_size = crop_size, 
+                                                  patch_size = crop_size,
                                                   border     = border)
         else:
             if crop_size != self.image.shape[:2]:
-                self.image = extract_patch(self.image, 
-                                           patch_size     = crop_size, 
+                self.image = extract_patch(self.image,
+                                           patch_size     = crop_size,
                                            patch_position = crop_pos)
         return self
 
     def cropout(self, crop_size, crop_pos=None, fill_val=0):
         """
         Cropout a patch of self.image and replace it with `fill_val`. Relies on `cropout_patch`.
-        
+
         * crop_size: dimensions of the cropout (pair of H x W)
         * crop_pos:  if None, then a random cropout is taken, otherwise the given `crop_pos` position is used
                      pair of relative coordinates: (0,0) = upper left corner, (1,1) = lower right corner
@@ -119,7 +119,7 @@ class ImageAugmenter(object):
         # if using a ratio cropout, compute actual cropout size
         crop_size = [np.int32(c*dim) if isinstance(c, float) and (0 < c) and (c <= 1.) else c\
                      for c, dim in zip(crop_size, self.image.shape[:2])]
-             
+
         if self.verbose:
             print('image_size:', self.image.shape, 'crop_size:', crop_size, 'fill_val:', fill_val)
 
@@ -137,7 +137,7 @@ class ImageAugmenter(object):
                                            patch_position = crop_pos,
                                            fill_val       = fill_val)
         return self
-    
+
     def fliplr(self, do=None):
         """
         Flip left-right self.image
@@ -149,7 +149,7 @@ class ImageAugmenter(object):
             self._rotation_angle = -self._rotation_angle
             self.image = np.fliplr(self.image)
         return self
-    
+
     def rescale(self, target, proportion=1, min_dim=False):
         """
         Rescale self.image proportionally
@@ -166,7 +166,7 @@ class ImageAugmenter(object):
         if isinstance(target, int): # target dimensions
             if not min_dim:
                 # choose height for zoom
-                zoom_target = self.image.shape[0] 
+                zoom_target = self.image.shape[0]
             else:
                 # choose minimum dimension
                 zoom_target = min(self.image.shape[0],
@@ -175,12 +175,12 @@ class ImageAugmenter(object):
         else:
             zoom = target
         zoom = (1-proportion) + proportion*zoom
-            
-        self.image = transform.rescale(self.image, zoom, 
+
+        self.image = transform.rescale(self.image, zoom,
                                        preserve_range=True,
                                        mode='reflect')
         return self
-    
+
     def resize(self, size, ensure_min=False, fit_frame=False):
         """
         Resize image to target dimensions, exact or fitting inside frame
@@ -188,19 +188,19 @@ class ImageAugmenter(object):
         * size: (height, width) tuple
         * ensure_min: if true, `size` is the minimum size allowed
                       a dimension is not changed unless it is below the minimum size
-        * fit_frame: size concerns the dimensions of the frame that the image is to be 
+        * fit_frame: size concerns the dimensions of the frame that the image is to be
                      fitted into, while preserving its aspect ratio
         :return: self
         """
         imsz = self.image.shape[:2] # (height, width)
-                
+
         if not fit_frame:
             # resize if needed only
             if (not ensure_min and size != imsz) or\
                (ensure_min and (imsz[0] < size[0] or imsz[1] < size[1])):
                 if ensure_min:
                     size = [max(a, b) for a, b in zip(imsz, size)]
-                self.image = transform.resize(self.image, size, 
+                self.image = transform.resize(self.image, size,
                                               preserve_range=True)
         else:
             image_height, image_width = imsz
@@ -216,7 +216,7 @@ class ImageAugmenter(object):
 
             target_width, target_height = int(np.round(target_width)), int(np.round(target_height))
 
-            self.image = transform.resize(self.image, (target_height, target_width), 
+            self.image = transform.resize(self.image, (target_height, target_width),
                                           preserve_range=True)
         return self
 
@@ -234,19 +234,19 @@ class ImageAugmenter(object):
         else:
             return self.image
 
-        
+
 # -- utility functions --
-            
+
 def get_patch_dims(im, patch_size, patch_position):
     """
     Returns the dimensions of an image patch of size `patch_size`,
     with its center at `patch_position` expressed as a ratio of the image's H and W
-    
+
     * im:             np.ndarray of size H x W x C
     * patch_size:     2-tuple of patch H x W
     * patch_position: 2-tuple containing patch location
                       (0,0) = upper left corner, (1,1) = lower right corner
-    :return:          tuple of (upper left corner X coordinate, 
+    :return:          tuple of (upper left corner X coordinate,
                                 upper left corner Y coordinate,
                                 lower right corner X coordinate,
                                 lower right corner Y coordinate)
@@ -254,7 +254,7 @@ def get_patch_dims(im, patch_size, patch_position):
     Py, Px         = patch_position
     H, W, _        = im.shape
     H_crop, W_crop = patch_size
-    
+
     H_crop, W_crop = min(H, H_crop), min(W, W_crop)
     Y_max, X_max   = (H - H_crop, W - W_crop)
     Yc, Xc         = H*Py, W*Px
@@ -262,10 +262,10 @@ def get_patch_dims(im, patch_size, patch_position):
     X0, Y0 = Xc-old_div(W_crop,2), Yc-old_div(H_crop,2)
     X0, Y0 = min(max(int(X0), 0), X_max),\
              min(max(int(Y0), 0), Y_max)
-    
+
     return (X0, Y0, X0+W_crop, Y0+H_crop)
 
-def extract_patch(im, patch_size=(224, 224), 
+def extract_patch(im, patch_size=(224, 224),
                   patch_position=(0.5, 0.5)):
     """
     Extract a patch of size `patch_size`,
@@ -284,33 +284,33 @@ def get_random_patch_dims(im, patch_size, border):
     """
     Returns the dimensions of a random image patch of size `patch_size`,
     with the center of the patch inside `border`
-    
+
     * im:         np.ndarray of size H x W x C
     * patch_size: 2-tuple of patch H x W
     * border:     2-tuple of border H x W
-    :return:      tuple of (upper left corner X coordinate, 
+    :return:      tuple of (upper left corner X coordinate,
                             upper left corner Y coordinate,
                             lower right corner X coordinate,
                             lower right corner Y coordinate)
     """
     H, W, _        = im.shape
     H_crop, W_crop = patch_size
-    
-    H_crop, W_crop = min(H, H_crop), min(W, W_crop)    
+
+    H_crop, W_crop = min(H, H_crop), min(W, W_crop)
     Y_min, X_min   = border
     Y_max, X_max   = (H - H_crop - Y_min, W - W_crop - X_min)
-    
-    if Y_max < Y_min: 
+
+    if Y_max < Y_min:
         Y_min = old_div((H - H_crop), 2)
         Y_max = Y_min
-    
+
     if X_max < X_min:
         X_min = old_div((W - W_crop), 2)
         X_max = X_min
-    
+
     Y0 = int(np.round(rand(1)*(Y_max-Y_min) + Y_min))
     X0 = int(np.round(rand(1)*(X_max-X_min) + X_min))
-    
+
     return (X0, Y0, X0+W_crop, Y0+H_crop)
 
 def extract_random_patch(im, patch_size=(224, 224), border=(0, 0)):
@@ -323,7 +323,7 @@ def extract_random_patch(im, patch_size=(224, 224), border=(0, 0)):
     * border:     2-tuple of border H x W
     :return:      np.ndarray
     """
-    (X0, Y0, X1, Y1) = get_random_patch_dims(im, patch_size, border)    
+    (X0, Y0, X1, Y1) = get_random_patch_dims(im, patch_size, border)
     return im[Y0:Y1, X0:X1, ]
 
 def cropout_patch(im, patch_size=(224, 224),
@@ -357,7 +357,7 @@ def cropout_random_patch(im, patch_size=(224, 224), border=(0, 0), fill_val=0):
     """
     (X0, Y0, X1, Y1) = get_random_patch_dims(im, patch_size, border)
     im_ = im.copy()
-    im_[Y0:Y1, X0:X1, ] = fill_val    
+    im_[Y0:Y1, X0:X1, ] = fill_val
     return im_
 
 # modified from stackoverflow
@@ -400,21 +400,21 @@ def largest_rotated_rect(w, h, angle):
 def image_to_tiles(im, num_patches):
     """
     Cut an image `im` into equal sized patches.
-    
+
     * im: input image
     * num_patches: (num_vertical, num_horizontal)
     """
-    H, W = im.shape[:2]    
+    H, W = im.shape[:2]
     H_count, W_count = num_patches
     patch_H, patch_W = int(H / H_count), int(W / W_count)
-    tiles = [im[x:x+patch_H,y:y+patch_W] for x in range(0,H,patch_H) 
+    tiles = [im[x:x+patch_H,y:y+patch_W] for x in range(0,H,patch_H)
                                          for y in range(0,W,patch_W)]
     return tiles
 
 def tiles_to_image(tiles, num_patches):
     """
     Reconstruct an image from tiles, resulting from `image_to_tiles`.
-    
+
     * tiles: list of image patches
     * num_patches: (num_vertical, num_horizontal)
     """
@@ -426,7 +426,7 @@ def imshuffle(im, num_patches):
     """
     Cut image into patches, shuffle and return the shuffled reconstructed image.
     Uses `image_to_tiles` and `tiles_to_image`.
-    
+
     * im: input image
     * num_patches: (num_vertical, num_horizontal)
     """
@@ -437,8 +437,8 @@ def imshuffle(im, num_patches):
 def imshuffle_pair(im1, im2, num_patches, ratio=0.5, flip=False):
     """
     Scramble patches coming from two images into a single image.
-    Similar to `imshuffle`, but the patches come from images `im1` and `im2`. 
-    
+    Similar to `imshuffle`, but the patches come from images `im1` and `im2`.
+
     * im1, im2: input images, of equal size
     * num_patches: (num_vertical, num_horizontal) patches to divide each image in
     * ratio: fraction of patches to take from `im1`, the rest are taken from `im2`
@@ -452,6 +452,7 @@ def imshuffle_pair(im1, im2, num_patches, ratio=0.5, flip=False):
     np.random.shuffle(t12)
     if flip:
         for i, _ in enumerate(t12):
-            if rand(1) > 0.5: 
+            if rand(1) > 0.5:
                 t12[i] = np.fliplr(t12[i])
     return tiles_to_image(t12, num_patches)
+

@@ -7,7 +7,7 @@ import multiprocessing as mp
 from munch import Munch
 import os, random
 from six import string_types
-import keras
+from tensorflow import keras
 
 from .image_utils import *
 from .generic import *
@@ -44,7 +44,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
                                    `group_names` are randomly sampled from meta-groups
                                    i.e. when group_names = [[group_names_1], [group_names_2]]
     * random_group (bool): read inputs from a random group for every image
-                                  
+
     """
     def __init__(self, ids, data_path, **args):
         params_defa = Munch(ids           = ids,   data_path= data_path,
@@ -52,7 +52,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
                             input_shape   = None,  ids_fn   = None,
                             process_fn    = None,  read_fn  = None,
                             deterministic = None,  inputs   = [],
-                            inputs_df     = None,  outputs  = [], 
+                            inputs_df     = None,  outputs  = [],
                             verbose       = False, fixed_batches = False,
                             random_group  = False, group_names   = None,
                             process_args  = {},    group_by = None)
@@ -91,23 +91,23 @@ class DataGeneratorDisk(keras.utils.Sequence):
         return self._data_generation(ids_batch)
 
     def on_epoch_end(self):
-        """Updates batch selection after each epoch"""        
-        
+        """Updates batch selection after each epoch"""
+
         if self.ids_fn is not None:
             self.ids = self.ids_fn()
-            
+
         if self.group_by:
             group_dict = dict(group_by=self.ids[self.group_by])
-        else: 
+        else:
             group_dict = None
-            
-        self.ids_index = pd.DataFrame(group_dict, 
+
+        self.ids_index = pd.DataFrame(group_dict,
                                       index=self.ids.index.copy())
         self.ids_index['batch_index'] = -1
-        
+
         # initialize batch indexes
         index = 0
-        selectable = self.ids_index.batch_index == -1        
+        selectable = self.ids_index.batch_index == -1
         while selectable.sum():
             ids_sel = self.ids_index[selectable]
             if self.group_by:
@@ -117,7 +117,7 @@ class DataGeneratorDisk(keras.utils.Sequence):
 
             batch_size_max = min(self.batch_size, len(ids_sel))
             if self.shuffle:
-                ids_batch = ids_sel.sample(batch_size_max, 
+                ids_batch = ids_sel.sample(batch_size_max,
                                            random_state=self.deterministic)
             else:
                 ids_batch = ids_sel.iloc[:batch_size_max]
@@ -125,14 +125,14 @@ class DataGeneratorDisk(keras.utils.Sequence):
             self.ids_index.loc[ids_batch.index, 'batch_index'] = index
             index += 1
             selectable = self.ids_index.batch_index == -1
-        
-    def _access_field(self, ids_batch, accessor):                
+
+    def _access_field(self, ids_batch, accessor):
         if isinstance(ids_batch[accessor].values[0][0], np.ndarray):
             return np.stack(ids_batch[accessor].values.squeeze(), axis=0)
         else:
             return ids_batch[accessor].values
-        
-    def _read_data(self, ids_batch, accessor):        
+
+    def _read_data(self, ids_batch, accessor):
         X = []
         if accessor:
             assert isinstance(accessor, list) or callable(accessor),\
@@ -150,36 +150,36 @@ class DataGeneratorDisk(keras.utils.Sequence):
                  raise Exception('Wrong generator input/output specifications')
 
         return X
-    
+
     def _data_generation(self, ids_batch):
         """Generates image-stack + outputs containing batch_size samples"""
         params = self
         np.random.seed(params.deterministic)
-        
-        y = self._read_data(ids_batch, params.outputs)        
+
+        y = self._read_data(ids_batch, params.outputs)
         X_list = self._read_data(ids_batch, params.inputs_df)
-            
+
         assert isinstance(params.inputs, list),\
         'Generator inputs/outputs must be of type list'
 
-        # group_names are randomly sampled from meta-groups 
+        # group_names are randomly sampled from meta-groups
         # i.e. when group_names = [[group_names1], [group_names2]]
         group_names = params.group_names
         if isinstance(group_names[0], list):
             idx = np.random.randint(0, len(group_names))
             group_names = group_names[idx]
-        
+
         if isinstance(params.data_path, string_types):
-            # get data for each input and add it to X_list    
-            for group_name in group_names:                
-                if params.random_group:   
+            # get data for each input and add it to X_list
+            for group_name in group_names:
+                if params.random_group:
                     group_path = os.path.join(params.data_path, group_name) or '.'
-                    subdir_names = [f for f in os.listdir(group_path) 
+                    subdir_names = [f for f in os.listdir(group_path)
                                     if os.path.isdir(os.path.join(group_path, f))]
                     subgroup_name = random.choice(subdir_names)
                 else:
                     subgroup_name = ''
-                
+
                 for input_name in params.inputs:
                     data = []
                     # read the data from disk into a list
@@ -196,12 +196,12 @@ class DataGeneratorDisk(keras.utils.Sequence):
                     args_name = params.process_args.get(input_name, None)
 
                     # if needed, process each image, and add to X_list (inputs list)
-                    if params.process_fn not in [None, False]:                
+                    if params.process_fn not in [None, False]:
                         data_list = []
                         for i, row in enumerate(ids_batch.itertuples()):
                             args = []
                             if args_name is not None:
-                                args = [getattr(row, name) for name in force_list(args_name)]         
+                                args = [getattr(row, name) for name in force_list(args_name)]
                             data_i = params.process_fn(data[i], *args)
                             data_list.append(force_list(data_i))
 
@@ -261,7 +261,7 @@ class DataGeneratorHDF5(DataGeneratorDisk):
                             input_shape = None,  group_by      = None,   ids_fn        = None)
 
         check_keys_exist(args, params_defa)
-        params = updated_dict(params_defa, **args) # update only existing       
+        params = updated_dict(params_defa, **args) # update only existing
         params.process_args  = params.process_args or {}
         params.group_names   = params.group_names or [None]
         params.deterministic = {True: 42, False: None}.\
@@ -275,18 +275,18 @@ class DataGeneratorHDF5(DataGeneratorDisk):
     def _data_generation(self, ids_batch):
         """Generates data containing batch_size samples"""
         params = self
-        np.random.seed(params.deterministic)        
-        
+        np.random.seed(params.deterministic)
+
         y = self._read_data(ids_batch, params.outputs)
         X_list = self._read_data(ids_batch, params.inputs_df)
 
         assert isinstance(params.inputs, list),\
         'Generator inputs/outputs must be of type list'
-        
+
         if isinstance(params.data_path, string_types):
             with H5Helper(params.data_path, file_mode='r',
                           memory_mapped=params.memory_mapped) as h:
-                # group_names are randomly sampled from meta-groups 
+                # group_names are randomly sampled from meta-groups
                 # i.e. when group_names = [[group_names1], [group_names2]]
                 group_names = params.group_names
                 if isinstance(group_names[0], list):
@@ -306,12 +306,12 @@ class DataGeneratorHDF5(DataGeneratorDisk):
                             data = h.read_data(names, group_names=[group_name])[0]
                         if data.dtype != np.float32:
                             data = data.astype(np.float32)
-                        
+
                         # column name for the arguments to `process_fn`
                         args_name = params.process_args.get(input_name, None)
-                        
+
                         # add to X_list
-                        if params.process_fn not in [None, False]:                        
+                        if params.process_fn not in [None, False]:
                             data_new = None
                             for i, row in enumerate(ids_batch.itertuples()):
                                 arg = [] if args_name is None else [getattr(row,args_name)]
@@ -334,9 +334,9 @@ class GeneratorStack(keras.utils.Sequence):
     """
     def __init__(self, generator_list):
         self.gens = generator_list
-        
+
     def __len__(self):
-        """Number of batches per epoch"""        
+        """Number of batches per epoch"""
         return len(self.gens[0])
 
     def __getitem__(self, index):
@@ -347,3 +347,4 @@ class GeneratorStack(keras.utils.Sequence):
             X.extend(X_)
             y.extend(y_)
         return (X, y)
+
