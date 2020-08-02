@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from .generic import *
 from .image_augmenter import ImageAugmenter
 
-from keras.preprocessing.image import img_to_array, array_to_img, load_img
+from tensorflow.keras.preprocessing.image import img_to_array, array_to_img, load_img
 
 def imv(im, remap=True, figsize=None, **kwargs):
     """

@@ -3,12 +3,14 @@ from __future__ import division
 from builtins import map
 from past.utils import old_div
 import os, sys
-from keras import backend as K
+import tensorflow as tf
+from tensorflow.keras import backend as K
 
-if sys.version_info.major==3:
-    tf = K.tensorflow_backend.tf
-else:
-    tf = K.tf
+# legacy, to be removed?
+#if sys.version_info.major==3:
+#    tf = K.tensorflow_backend.tf
+#else:
+#    tf = K.tf
 
 # Keras configuration directives
 def SetActiveGPU(number=0):

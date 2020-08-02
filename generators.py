@@ -7,7 +7,7 @@ import multiprocessing as mp
 from munch import Munch
 import os, random
 from six import string_types
-import keras
+from tensorflow import keras
 
 from .image_utils import *
 from .generic import *

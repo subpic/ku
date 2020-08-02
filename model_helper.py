@@ -11,11 +11,11 @@ from pprint import pprint
 from munch import Munch
 from collections import OrderedDict
 
-import keras
-from keras.callbacks import TensorBoard, ModelCheckpoint, Callback, EarlyStopping
-from keras import optimizers
-from keras.models import Model, load_model
-from keras.utils import multi_gpu_model
+from tensorflow import keras
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, Callback, EarlyStopping
+from tensorflow.keras import optimizers
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.utils import multi_gpu_model
 
 from .generators import *
 from .generic import *

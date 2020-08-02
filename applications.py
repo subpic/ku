@@ -8,15 +8,18 @@ import matplotlib.pyplot as plt
 from functools import reduce
 from .model_helper import *
 
-import keras, sys
-from keras.utils import plot_model
-from keras.layers import *
-from keras.applications.inception_v3 import InceptionV3
-from keras.applications.densenet import DenseNet201
-from keras.applications.resnet50 import ResNet50
-from keras.applications.inception_resnet_v2 import InceptionResNetV2
-from keras.applications.vgg16 import VGG16
-from keras.applications.nasnet import NASNetMobile
+
+import sys
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.utils import plot_model
+from tensorflow.keras.layers import *
+from tensorflow.keras.applications.inception_v3 import InceptionV3
+from tensorflow.keras.applications.densenet import DenseNet201
+from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.nasnet import NASNetMobile
 
 source_module = {
                  InceptionV3:       keras.applications.inception_v3,
