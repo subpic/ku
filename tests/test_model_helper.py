@@ -13,8 +13,8 @@ import pytest, shutil
 from matplotlib import pyplot as plt
 from os import path
 
-from keras.layers import Input
-from keras.models import Model
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
 
 def test_validation_save_best_multiple_training_rounds():
     
@@ -39,7 +39,7 @@ def test_validation_save_best_multiple_training_rounds():
                             loss       = 'MSE',
                             metrics    = ['mean_absolute_error'],
                             monitor_metric = 'val_mean_absolute_error',
-                            multiproc  = False, workers = 2,
+                            multiproc  = False, workers = 1,
                             logs_root  = 'logs',
                             models_root= 'models',
                             gen_params = gen_params)
