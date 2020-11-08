@@ -1,13 +1,13 @@
 from __future__ import print_function
 from __future__ import absolute_import
-from ku import generic as gen
-from ku import image_augmenter as aug
+from kuti import generic as gen
+from kuti import image_augmenter as aug
 from munch import Munch
 import pandas as pd, numpy as np
 import pytest
 
 def test_imageutils_exposes_augmenter():
-    from ku import image_utils as iu
+    from kuti import image_utils as iu
     assert isinstance(iu.ImageAugmenter(np.ones(1)), aug.ImageAugmenter)
 
 def test_cropout_and_crop():

@@ -1,8 +1,8 @@
 from __future__ import print_function
 from __future__ import absolute_import
-from ku import generators as gr
-from ku import generic as gen
-from ku import image_utils as iu
+from kuti import generators as gr
+from kuti import generic as gen
+from kuti import image_utils as iu
 from munch import Munch
 import pandas as pd, numpy as np
 import pytest, shutil
