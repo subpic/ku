@@ -1,6 +1,6 @@
-# Keras Utilities (KU)
+# Keras utilities (Kuti)
 
-The project contains utilities for image assessment development with Keras/Tensorflow, including utilities for model training, custom generators, image management and augmentation. This is an extension of [kutils](https://github.com/subpic/kutils).
+The project contains utilities for image assessment development with Keras/Tensorflow, including utilities for model training, custom generators, image management and augmentation. This is a poetry package for [ku](https://github.com/subpic/ku).
 
 ## Overview
 
