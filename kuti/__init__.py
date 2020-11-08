@@ -18,5 +18,5 @@ class WarningFilter(logging.Filter):
 logger = logging.getLogger('tensorflow')
 logger.addFilter(WarningFilter())
 
-print('Loaded KU')
+print('Loaded Kuti')
 
