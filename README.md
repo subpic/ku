@@ -2,6 +2,8 @@
 
 The project contains utilities for image assessment development with Keras/Tensorflow, including utilities for model training, custom generators, image management and augmentation. This is a poetry package for [ku](https://github.com/subpic/ku).
 
+The library requires tensorflow >= 1.14 or 2.x installed.
+
 ## Overview
 
 Some of the key components of each file:
