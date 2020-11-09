@@ -415,17 +415,6 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
-name = "pillow-pil"
-version = "0.1dev"
-description = "Pillow wrapper for PIL compatibility"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-Pillow = "*"
-
-[[package]]
 name = "pluggy"
 version = "0.13.1"
 description = "plugin and hook calling mechanisms for python"
@@ -763,7 +752,7 @@ testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake
 [metadata]
 lock-version = "1.1"
     python-versions = ">= 3.6.1"    
-content-hash = "8589c3de6712f977d627d85845dc7de07af2b1402c5950c7b7abc548472b473b"
+content-hash = "bd33dd8f5d1ad78f7e4f796a5f0dbf25fa534f8b1a9ccdd207d8c7a9919ca826"
 
 [metadata.files]
 absl-py = [
@@ -1106,9 +1095,6 @@ pillow = [
     {file = "Pillow-8.0.1-pp36-pypy36_pp73-manylinux2010_x86_64.whl", hash = "sha256:4b0ef2470c4979e345e4e0cc1bbac65fda11d0d7b789dbac035e4c6ce3f98adb"},
     {file = "Pillow-8.0.1-pp37-pypy37_pp73-win32.whl", hash = "sha256:8de332053707c80963b589b22f8e0229f1be1f3ca862a932c1bcd48dafb18dd8"},
     {file = "Pillow-8.0.1.tar.gz", hash = "sha256:11c5c6e9b02c9dac08af04f093eb5a2f84857df70a7d4a6a6ad461aca803fb9e"},
-]
-pillow-pil = [
-    {file = "Pillow-PIL-0.1dev.tar.gz", hash = "sha256:d80ee30805f10bf898df9ce7495f46e88990e8f90b5c2b917722d87526252b2c"},
 ]
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},
