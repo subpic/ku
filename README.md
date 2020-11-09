@@ -4,6 +4,10 @@ The project contains utilities for image assessment development with Keras/Tenso
 
 The library requires tensorflow >= 1.14 or 2.x installed.
 
+To install:
+
+> pip install kuti
+
 ## Overview
 
 Some of the key components of each file:
