@@ -1,13 +1,13 @@
 [tool.poetry]
     name = "kuti"
-    version = "0.9.3"
+    version = "0.9.6"
     description = "Keras training management utilities."
     authors = ["Vlad Hosu <subpic@gmail.com>"]
     maintainers = ["Vlad Hosu <subpic@gmail.com>"]
     license = "MIT"
     readme = "README.md"
     homepage = ""
-    repository = "https://github.com/subpic/ku/"
+    repository = "https://github.com/subpic/ku/tree/master"
     documentation = ""
     keywords = [
         "Keras",
@@ -20,18 +20,18 @@
     ]
 
 [tool.poetry.dependencies]
-    python = ">= 3.6.1"    
+    python     = ">= 3.6.1"    
     matplotlib = "*"
-    numpy = "*"
-    scipy = "*"
+    numpy  = "*"
+    scipy  = "*"
     pandas = "*"
-    munch = "*"
-    scikit-learn = "^0.22.1"
-    scikit-image = "^0.16.2"
+    munch  = "*"
+    scikit-learn  = "^0.22.1"
+    scikit-image  = "^0.16.2"
     opencv-python = "*"
     future = "*"
-    h5py = "^2.10.0"
-    Pillow = "^8.0.1"
+    h5py   = "^2.10.0"
+    Pillow = "^7"
 
 [tool.poetry.dev-dependencies]
     pytest = "*"
