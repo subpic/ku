@@ -247,7 +247,7 @@ def model_inception_pooled(input_shape=(None, None, 3), indexes=list(range(11)),
                              input_shape = input_shape)
     print('Creating multi-pooled model')
 
-    ImageResizer = Lambda(lambda x: tf.image.resize_area(x, pool_size),
+    ImageResizer = Lambda(lambda x: tf.image.resize(x, pool_size, method='area'),
                           name='feature_resizer')
 
     feature_layers = [model_base.get_layer('mixed%d' % i) for i in indexes]
@@ -268,7 +268,7 @@ def model_inceptionresnet_pooled(input_shape=(None, None, 3), indexes=list(range
                                  pool_size=(5, 5), name='', return_sizes=False):
     """
     Returns the wide MLSP features, spatially pooled, from InceptionResNetV2.
-
+    
     * input_shape: shape of the input images
     * indexes: indices of the modules to use
     * pool_size: spatial extend of the MLSP features
@@ -283,7 +283,7 @@ def model_inceptionresnet_pooled(input_shape=(None, None, 3), indexes=list(range
                                    input_shape = input_shape)
     print('Creating multi-pooled model')
 
-    ImageResizer = Lambda(lambda x: tf.image.resize_area(x, pool_size),
+    ImageResizer = Lambda(lambda x: tf.image.resize(x, pool_size, method='area'),
                           name='feature_resizer')
 
     feature_layers = [l for l in model_base.layers if 'mixed' in l.name]
