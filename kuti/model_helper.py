@@ -269,7 +269,7 @@ class ModelHelper(object):
         * valid_gen: validation generator
         * lr:        learning rate
         * epochs:    number of epochs
-        :return:     training history from self.model.fit_generator()
+        :return:     training history from self.model.fit()
         """
         ids = self.ids
         print('Training model:', self.model_name())
@@ -320,7 +320,7 @@ class ModelHelper(object):
         if issubclass(type(train_gen),
                       keras.utils.Sequence):
             # train using the generator
-            history = self.model.fit_generator(
+            history = self.model.fit(
                              train_gen, epochs = epochs,
                              steps_per_epoch   = len(train_gen),
                              validation_data   = valid_data,
@@ -413,8 +413,8 @@ class ModelHelper(object):
 
         preds = []
         for i in range(repeats):
-            y_pred = model.predict_generator(test_gen, workers=1, verbose=0,
-                                             use_multiprocessing=False)
+            y_pred = model.predict(test_gen, workers=1, verbose=0,
+                                   use_multiprocessing=False)
             if not remodel and output_layer is not None:
                 y_pred = dict(list(zip(model.output_names, y_pred)))[output_layer]
             preds.append(y_pred)
@@ -431,8 +431,8 @@ class ModelHelper(object):
         if recompile: self.compile()
 
         if issubclass(type(valid_gen), keras.utils.Sequence):
-            r = self.model.evaluate_generator(valid_gen,
-                                              verbose=verbose)
+            r = self.model.evaluate(valid_gen,
+                                    verbose=verbose)
         else:
             X_valid, y_valid = valid_gen
             r = self.model.evaluate(X_valid, y_valid,
