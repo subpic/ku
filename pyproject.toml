@@ -1,6 +1,6 @@
 [tool.poetry]
     name = "kuti"
-    version = "0.9.8"
+    version = "0.9.8.1"
     description = "Keras training management utilities."
     authors = ["Vlad Hosu <vladehosu@gmail.com>"]
     maintainers = ["Vlad Hosu <vladehosu@gmail.com>"]

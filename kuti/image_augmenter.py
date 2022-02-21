@@ -155,7 +155,7 @@ class ImageAugmenter(object):
         Rescale self.image proportionally
 
         * target: (int) target resolution relative to the reference image resolution
-                  taken to be either the height if `min_dim` else min(height, width)
+                  taken to be either the height if not `min_dim` else min(height, width)
                   (float) zoom level
         * proportion: modulating factor for the zoom
                       when proportion=1 target zoom is unchanged
@@ -178,6 +178,7 @@ class ImageAugmenter(object):
 
         self.image = transform.rescale(self.image, zoom,
                                        preserve_range=True,
+                                       multichannel=True,
                                        mode='reflect')
         return self
 
