@@ -152,20 +152,20 @@ class ModelHelper(object):
         """Update model name based on parameters in self. gen_params, params and model"""
         h = self
         tostr = lambda x: str(x) if x is not None else "?"
-        format_size = lambda x: "[{}]".format(",".join(map(tostr, x)))
+        format_size = lambda x: f'[{",".join(map(tostr, x))}]'
         loss2str = lambda x: (x if isinstance(x, (str, bytes)) else x.__name__)[:9]
 
         loss = h.params.loss
-        if not isinstance(loss, dict):
-            loss_str = loss2str(loss)
-        else:
-            loss_str = "[%s]" % ",".join(map(loss2str, list(loss.values())))
-        i = "{}{}".format(len(h.model.inputs), format_size(h.gen_params.input_shape))
+        loss_str = (
+            f'[{",".join(map(loss2str, list(loss.values())))}]'
+            if isinstance(loss, dict)
+            else loss2str(loss)
+        )
+
+        i = f"{len(h.model.inputs)}{format_size(h.gen_params.input_shape)}"
         if h.model.outputs:
-            o = "{}{}".format(
-                len(h.model.outputs),
-                format_size(h.model.outputs[0].shape[1:].as_list()),
-            )
+            o = f"{len(h.model.outputs)}{format_size(h.model.outputs[0].shape[1:].as_list())}"
+
         else:
             o = ""
         name = dict(i=i, o=o, l=loss_str, bsz=h.gen_params.batch_size)
@@ -239,7 +239,11 @@ class ModelHelper(object):
         * input_idx: scalar or 2-tuple of indices
         :return: generated_batch
         """
-        ids_gen = self.ids.iloc[input_idx[0] : input_idx[1]] if isinstance(input_idx, (list, tuple)) else self.ids.iloc[input_idx : input_idx + 1]
+        ids_gen = (
+            self.ids.iloc[input_idx[0] : input_idx[1]]
+            if isinstance(input_idx, (list, tuple))
+            else self.ids.iloc[input_idx : input_idx + 1]
+        )
 
         gen = self.make_generator(ids_gen)
         x = gen[0]  # generated data
@@ -333,7 +337,7 @@ class ModelHelper(object):
 
         if issubclass(type(train_gen), keras.utils.Sequence):
             # train using the generator
-            history = self.model.fit(
+            return self.model.fit(
                 train_gen,
                 epochs=epochs,
                 steps_per_epoch=len(train_gen),
@@ -346,24 +350,22 @@ class ModelHelper(object):
                 use_multiprocessing=self.params.multiproc,
                 verbose=verbose,
             )
-        else:
-            # training data is passed in train_gen
-            X, y = train_gen
-            steps_per_epoch = X.shape[0] // self.gen_params.batch_size
 
-            history = self.model.fit(
-                X,
-                y,
-                batch_size=self.gen_params.batch_size,
-                epochs=epochs,
-                callbacks=self.callbacks,
-                validation_data=valid_data,
-                shuffle=self.gen_params.shuffle,
-                class_weight=self.params.class_weights,
-                verbose=verbose,
-            )
+        # training data is passed in train_gen
+        X, y = train_gen
+        steps_per_epoch = X.shape[0] // self.gen_params.batch_size
 
-        return history
+        return self.model.fit(
+            X,
+            y,
+            batch_size=self.gen_params.batch_size,
+            epochs=epochs,
+            callbacks=self.callbacks,
+            validation_data=valid_data,
+            shuffle=self.gen_params.shuffle,
+            class_weight=self.params.class_weights,
+            verbose=verbose,
+        )
 
     def clean_outputs(self, force=False):
         """
@@ -372,7 +374,7 @@ class ModelHelper(object):
         Asks for user confirmation before deleting any files.
         """
         log_dir = os.path.join(self.params.logs_root, self.model_name())
-        model_path = os.path.join(self.params.models_root, self.model_name()) + "*.h5"
+        model_path = f"{os.path.join(self.params.models_root, self.model_name())}*.h5"
         model_path = model_path.replace("[", "[[]")
         model_files = glob.glob(model_path)
 
@@ -432,7 +434,7 @@ class ModelHelper(object):
             model = self.model
 
         preds = []
-        for i in range(repeats):
+        for _ in range(repeats):
             y_pred = model.predict(
                 test_gen, workers=1, verbose=0, use_multiprocessing=False
             )
@@ -629,12 +631,14 @@ class ModelHelper(object):
         ids = self.ids
         print("[Saving features]")
 
-        if not inspect.isgeneratorfunction(process_gen):
-            process_gen = [(process_gen, None)]
-        else:
-            process_gen = process_gen()
+        process_gen = (
+            process_gen()
+            if inspect.isgeneratorfunction(process_gen)
+            else [(process_gen, None)]
+        )
 
         first_verbose = 2
+        numel = len(ids)
         for (process_fn, args) in process_gen:
             self.gen_params.process_fn = process_fn
             if args:
@@ -644,7 +648,6 @@ class ModelHelper(object):
                     arg_str = str(args)
                 print('Augmentation args "' + arg_str + '"')
 
-            numel = len(ids)
             for i in range(0, numel, batch_size):
                 istop = min(i + batch_size, numel)
                 print("\nImages", i, ":", istop)

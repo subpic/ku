@@ -1,15 +1,14 @@
 from __future__ import print_function
 from __future__ import division
 from builtins import map
-from past.utils import old_div
-import os, sys
+import os
 import tensorflow as tf
 from tensorflow.keras import backend as K
 
 # legacy, to be removed?
-#if sys.version_info.major==3:
+# if sys.version_info.major==3:
 #    tf = K.tensorflow_backend.tf
-#else:
+# else:
 #    tf = K.tf
 
 # Keras configuration directives
@@ -21,9 +20,11 @@ def SetActiveGPU(number=0):
               e.g. 0 for the 1st GPU, or [0,2] for the 1st and 3rd GPU
     """
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    if not isinstance(number,list): number=[number]
-    os.environ["CUDA_VISIBLE_DEVICES"] = ', '.join(map(str,number))
-    print('Visible GPU(s):', os.environ["CUDA_VISIBLE_DEVICES"])
+    if not isinstance(number, list):
+        number = [number]
+    os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join(map(str, number))
+    print("Visible GPU(s):", os.environ["CUDA_VISIBLE_DEVICES"])
+
 
 def GPUMemoryCap(fraction=1):
     """
@@ -38,15 +39,18 @@ def GPUMemoryCap(fraction=1):
 
 # Metrics and losses
 
+
 def plcc_tf(x, y):
     """PLCC metric"""
     xc = x - K.mean(x)
     yc = y - K.mean(y)
-    return K.mean(xc*yc)/(K.std(x)*K.std(y) + K.epsilon())
+    return K.mean(xc * yc) / (K.std(x) * K.std(y) + K.epsilon())
+
 
 def plcc_loss(x, y):
     """Loss version of `plcc_tf`"""
-    return (1. - plcc_tf(x, y)) / 2.
+    return (1.0 - plcc_tf(x, y)) / 2.0
+
 
 def earth_mover_loss(y_true, y_pred):
     """
@@ -59,14 +63,16 @@ def earth_mover_loss(y_true, y_pred):
     samplewise_emd = K.sqrt(K.mean(K.square(K.abs(cdf_ytrue - cdf_ypred)), axis=-1))
     return K.mean(samplewise_emd)
 
+
 def make_loss(loss, **params_defa):
     def custom_loss(*args, **kwargs):
         kwargs.update(params_defa)
         return loss(*args, **kwargs)
+
     return custom_loss
 
 
-def get_plcc_dist_tf(scores_array=[1., 2, 3, 4, 5]):
+def get_plcc_dist_tf(scores_array=[1.0, 2, 3, 4, 5]):
     """
     Function generator for `plcc_dist_tf`
     Computes the PLCC between the MOS values computed
@@ -74,6 +80,7 @@ def get_plcc_dist_tf(scores_array=[1., 2, 3, 4, 5]):
 
     * scores_array: scale values
     """
+
     def plcc_dist_tf(x, y):
         scores = K.constant(scores_array)
         xm = K.sum((x / K.reshape(K.sum(x, 1), [-1, 1])) * scores, 1)
@@ -82,13 +89,17 @@ def get_plcc_dist_tf(scores_array=[1., 2, 3, 4, 5]):
         y_sd = K.std(ym)
         xm_center = xm - K.mean(xm)
         ym_center = ym - K.mean(ym)
-        return K.mean(xm_center*ym_center)/(x_sd*y_sd + 1e-3)
+        return K.mean(xm_center * ym_center) / (x_sd * y_sd + 1e-3)
+
     return plcc_dist_tf
 
-def get_plcc_dist_loss(scores_array=[1., 2, 3, 4, 5]):
+
+def get_plcc_dist_loss(scores_array=[1.0, 2, 3, 4, 5]):
     """Loss version of `plcc_dist_tf`"""
     plcc_dist_tf = get_plcc_dist_tf(scores_array)
+
     def plcc_dist_loss(x, y):
-        return (1-plcc_dist_tf(x, y))/2
+        return (1 - plcc_dist_tf(x, y)) / 2
+
     return plcc_dist_loss
 

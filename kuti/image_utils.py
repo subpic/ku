@@ -5,20 +5,17 @@ from builtins import str
 from builtins import map
 from builtins import zip
 from builtins import range
-from builtins import object
 from past.utils import old_div
-import math, os, numpy as np, glob
-import scipy.ndimage.interpolation
+import numpy as np
+import glob
 import skimage.transform as transform
-from numpy import interp
 from numpy.random import rand
-import PIL
 from PIL import Image
 import matplotlib.pyplot as plt
 from .generic import *
-from .image_augmenter import ImageAugmenter
 
 from tensorflow.keras.preprocessing.image import img_to_array, array_to_img, load_img
+
 
 def imv(im, remap=True, figsize=None, **kwargs):
     """
@@ -26,14 +23,17 @@ def imv(im, remap=True, figsize=None, **kwargs):
     """
     plt.figure(figsize=figsize)
     im_ = np.squeeze(im)
-    if remap: im_ = mapmm(im_)
-    if len(im_.shape)<3 or im_.shape[2]==1:
-        kwargs.setdefault('cmap','gray')
-    plt.imshow(im_, **kwargs);
-    plt.axis('off');
+    if remap:
+        im_ = mapmm(im_)
+    if len(im_.shape) < 3 or im_.shape[2] == 1:
+        kwargs.setdefault("cmap", "gray")
+    plt.imshow(im_, **kwargs)
+    plt.axis("off")
 
-def view_stack(ims, figsize=(20, 20), figshape=None,
-               cmap='gray', vrange='all', **kwargs):
+
+def view_stack(
+    ims, figsize=(20, 20), figshape=None, cmap="gray", vrange="all", **kwargs
+):
     """
     Display a stack or list of images using subplots.
 
@@ -50,33 +50,29 @@ def view_stack(ims, figsize=(20, 20), figshape=None,
     * kwargs: passed to `imshow` for each image
     """
     # get number of images
-    if isinstance(ims, list): n = len(ims)
-    else:                     n = ims.shape[0]
-
+    n = len(ims) if isinstance(ims, list) else ims.shape[0]
     if figshape is None:
         cols = int(np.ceil(np.sqrt(n)))
-        rows = int(np.ceil(old_div(1.*n,cols)))
+        rows = int(np.ceil(old_div(1.0 * n, cols)))
     else:
         rows, cols = figshape
-    if vrange == 'all':
+    if vrange == "all":
         if isinstance(ims, list):
             mm = list(map(minmax, ims))
-            vrange = (min([p[0] for p in mm]),
-                      max([p[1] for p in mm]))
+            vrange = min(p[0] for p in mm), max(p[1] for p in mm)
         else:
             vrange = minmax(ims)
-    elif vrange == 'each':
+    elif vrange == "each":
         vrange = (None, None)
 
     fig = plt.figure(figsize=figsize)
     for i in range(n):
-        ax = fig.add_subplot(rows, cols, i+1)
-        if isinstance(ims, list): im = ims[i]
-        else:                     im = np.squeeze(ims[i, ...])
-        ax.imshow(im, cmap=cmap,
-                  vmin=vrange[0], vmax=vrange[1], **kwargs)
+        ax = fig.add_subplot(rows, cols, i + 1)
+        im = ims[i] if isinstance(ims, list) else np.squeeze(ims[i, ...])
+        ax.imshow(im, cmap=cmap, vmin=vrange[0], vmax=vrange[1], **kwargs)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
+
 
 def read_image(image_path, image_size=1):
     """
@@ -93,18 +89,22 @@ def read_image(image_path, image_size=1):
     else:
         im = load_img(image_path)
         x = img_to_array(im)
-        if not image_size == 1:
-            new_size = list(map(int, (x.shape[0]*image_size, x.shape[1]*image_size)))
-            x = transform.resize(x/255., new_size, mode='reflect')*255.
+        if image_size != 1:
+            new_size = list(
+                map(int, (x.shape[0] * image_size, x.shape[1] * image_size))
+            )
+            x = transform.resize(x / 255.0, new_size, mode="reflect") * 255.0
     return x
 
-def write_image(im_arr, dst_path, fmt='jpg'):
+
+def write_image(im_arr, dst_path, fmt="jpg"):
     im = array_to_img(im_arr)
     make_dirs(dst_path)
-    if fmt.lower() in ('jpg', 'jpeg'):
-        im.save(dst_path, 'JPEG', quality=95)
+    if fmt.lower() in ("jpg", "jpeg"):
+        im.save(dst_path, "JPEG", quality=95)
     else:
         im.save(dst_path, fmt.upper())
+
 
 def read_image_batch(image_paths, image_size=None, as_list=False):
     """
@@ -123,13 +123,18 @@ def read_image_batch(image_paths, image_size=None, as_list=False):
             im = im.resize(image_size, Image.LANCZOS)
         x = img_to_array(im).astype(np.uint8)
         if images is None:
-            if not as_list:
-                images = np.zeros((len(image_paths),) + x.shape,
-                                  dtype=np.uint8)
-            else: images = []
-        if not as_list: images[i, ...] = x
-        else: images.append(x)
+            images = (
+                []
+                if as_list
+                else np.zeros((len(image_paths),) + x.shape, dtype=np.uint8)
+            )
+
+        if not as_list:
+            images[i, ...] = x
+        else:
+            images.append(x)
     return images
+
 
 def resize_image(x, size):
     """
@@ -143,13 +148,18 @@ def resize_image(x, size):
         minx, maxx = minmax(x)
         if maxx > 1 or minx < -1:
             x = mapmm(x)
-        x = transform.resize(x, size, mode='reflect')
+        x = transform.resize(x, size, mode="reflect")
         if maxx > 1 or minx < -1:
             x = mapmm(x, (minx, maxx))
     return x
 
-def glob_images(image_path, verbose=False, split=False, image_types =\
-                ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')):
+
+def glob_images(
+    image_path,
+    verbose=False,
+    split=False,
+    image_types=("*.jpg", "*.png", "*.bmp", "*.JPG", "*.BMP", "*.PNG"),
+):
 
     # index all `image_types` in source path
     file_list = []
@@ -158,16 +168,23 @@ def glob_images(image_path, verbose=False, split=False, image_types =\
         file_list.extend(glob.glob(pattern))
 
     if verbose:
-        print('\nFound', len(file_list), 'images')
+        print("\nFound", len(file_list), "images")
 
     if split:
         return list(zip(*[os.path.split(impath) for impath in file_list]))
     else:
         return file_list
 
-def resize_folder(path_src, path_dst, image_size_dst=None,
-                  overwrite=False, format_dst='jpg',
-                  process_fn=None, jpeg_quality=95):
+
+def resize_folder(
+    path_src,
+    path_dst,
+    image_size_dst=None,
+    overwrite=False,
+    format_dst="jpg",
+    process_fn=None,
+    jpeg_quality=95,
+):
     """
     Resize an image folder, copying the resized images to a new destination folder.
 
@@ -184,17 +201,17 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
 
     file_list = glob_images(path_src)
     make_dirs(path_dst)
-    print('Resizing images from "{}" to "{}"'.format(path_src, path_dst))
+    print(f'Resizing images from "{path_src}" to "{path_dst}"')
 
     errors = []
     for i, file_path_src in enumerate(file_list):
-        show_progress(i, len(file_list), prefix='Resizing')
+        show_progress(i, len(file_list), prefix="Resizing")
 
         try:
             file_name = os.path.split(file_path_src)[1]
             (file_body, file_ext) = os.path.splitext(file_name)
 
-            file_name_dst = file_body + '.' + format_dst.lower()
+            file_name_dst = file_body + "." + format_dst.lower()
             file_path_dst = os.path.join(path_dst, file_name_dst)
 
             # check that image hasn't been already processed
@@ -204,26 +221,28 @@ def resize_folder(path_src, path_dst, image_size_dst=None,
                     im = process_fn(im)
                 if image_size_dst is not None:
                     if isinstance(image_size_dst, float):
-                        actual_size = [int(y*image_size_dst) for y in im.size]
+                        actual_size = [int(y * image_size_dst) for y in im.size]
                     else:
                         actual_size = image_size_dst
                     imx = im.resize(actual_size, Image.LANCZOS)
                 else:
                     imx = im
-                if format_dst.lower() in ('jpg', 'jpeg'):
-                    imx.save(file_path_dst, 'JPEG', quality=jpeg_quality)
+                if format_dst.lower() in ("jpg", "jpeg"):
+                    imx.save(file_path_dst, "JPEG", quality=jpeg_quality)
                 else:
                     imx.save(file_path_dst, format_dst.upper())
 
         except Exception as e:
-            print('Error saving', file_name)
-            print('Exception:', e)
+            print("Error saving", file_name)
+            print("Exception:", e)
             errors.append(file_name)
 
     return errors
 
-def check_images(image_dir, image_types =\
-                 ('*.jpg', '*.png', '*.bmp', '*.JPG', '*.BMP', '*.PNG')):
+
+def check_images(
+    image_dir, image_types=("*.jpg", "*.png", "*.bmp", "*.JPG", "*.BMP", "*.PNG")
+):
     """
     Check which images from `image_dir` fail to read.
 
@@ -236,19 +255,21 @@ def check_images(image_dir, image_types =\
     image_names_err = []
     image_names_all = []
     for (i, file_path) in enumerate(file_list):
-        show_progress(i, len(file_list), prefix='Checking')
+        show_progress(i, len(file_list), prefix="Checking")
 
         try:
             file_dir, file_name = os.path.split(file_path)
             file_body, file_ext = os.path.splitext(file_name)
             image_names_all.append(file_name)
-            load_img(file_path) # try to load
+            load_img(file_path)  # try to load
         except:
             image_names_err.append(file_name)
     return (image_names_err, image_names_all)
 
-def save_images_to_h5(image_path, h5_path, overwrite=False,
-                      batch_size=32, image_size_dst=None):
+
+def save_images_to_h5(
+    image_path, h5_path, overwrite=False, batch_size=32, image_size_dst=None
+):
     """
     Save a folder of JPEGs to an HDF5 file. Uses `read_image_batch` and `H5Helper`.
 
@@ -258,23 +279,31 @@ def save_images_to_h5(image_path, h5_path, overwrite=False,
     * batch_size: number of images to read at a time
     * image_size_dst: new size of images, if not None
     """
-    file_list = glob_images(image_path, ['*.jpg'])
-#     file_list = glob.glob(os.path.join(image_path, '*.jpg'))
-#     print('Found', len(file_list), 'JPG images')
+    file_list = glob_images(image_path, ["*.jpg"])
+    #     file_list = glob.glob(os.path.join(image_path, '*.jpg'))
+    #     print('Found', len(file_list), 'JPG images')
     make_dirs(h5_path)
-    print('Saving images from "{}" to "{}"'.format(image_path, h5_path))
+    print(f'Saving images from "{image_path}" to "{h5_path}"')
 
     with H5Helper(h5_path, overwrite=overwrite) as h:
         for i, batch in enumerate(chunks(file_list, batch_size)):
             if i % 10 == 0:
-                print(i*batch_size, end=' ')
+                print(i * batch_size, end=" ")
             image_names = [str(os.path.basename(path)) for path in batch]
             images = read_image_batch(batch, image_size=image_size_dst)
             h.write_data(images, dataset_names=image_names)
 
 
-def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
-                   overwrite=False, verbose=True, simulate=False, file_list=None):
+def augment_folder(
+    path_src,
+    path_dst,
+    process_gen,
+    format_dst="jpg",
+    overwrite=False,
+    verbose=True,
+    simulate=False,
+    file_list=None,
+):
     """
     Augment an image folder, copying the augmented versions of the images to a new destination folder
     and returning a pd.DataFrame containing augmentation paths and parameters
@@ -297,7 +326,7 @@ def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
     if not simulate:
         make_dirs(path_dst)
     if verbose:
-        print('Augmenting images from "{}" to "{}"'.format(path_src, path_dst))
+        print(f'Augmenting images from "{path_src}" to "{path_dst}"')
 
     ids_list = []
 
@@ -305,26 +334,25 @@ def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
     for process_fn, args in process_gen():
         if args:
             if isinstance(args, dict):
-                args_str    = ', '.join(['{}:{}'.format(*a) for a in args.items()])
+                args_str = ", ".join(["{}:{}".format(*a) for a in args.items()])
                 args_values = list(args.values())
-                args_keys   = list(args.keys())
+                args_keys = list(args.keys())
             else:
                 args_str = str(args)
                 args_values = [args_str]
-                args_keys   = ['folder']
+                args_keys = ["folder"]
             if verbose:
-                print('Augmentation args "{}"'.format(args_str))
+                print(f'Augmentation args "{args_str}"')
         else:
-            args_str = ''
+            args_str = ""
 
         for i, file_path_src in enumerate(file_list):
             if verbose:
-                show_progress(i, len(file_list), prefix='Augmenting')
-
+                show_progress(i, len(file_list), prefix="Augmenting")
 
             file_name = os.path.split(file_path_src)[1]
             (file_body, file_ext) = os.path.splitext(file_name)
-            file_name_dst = '{}/{}.{}'.format(args_str, file_body, format_dst.lower())
+            file_name_dst = f"{args_str}/{file_body}.{format_dst.lower()}"
             file_path_dst = os.path.join(path_dst, file_name_dst)
 
             if not simulate:
@@ -333,24 +361,22 @@ def augment_folder(path_src, path_dst, process_gen, format_dst='jpg',
                 # check if image has already been processed
                 if overwrite or not os.path.isfile(file_path_dst):
                     if isinstance(args, dict):
-                        args_ = updated_dict(args, file_name=file_name,
-                                            only_existing=False)
+                        args_ = updated_dict(
+                            args, file_name=file_name, only_existing=False
+                        )
                         imx = array_to_img(process_fn(im, **args_))
                     else:
                         args_ = dict(file_name=file_name)
                         imx = array_to_img(process_fn(im, **args_))
 
                     make_dirs(file_path_dst)
-                    if format_dst.lower() in ('jpg', 'jpeg'):
-                        imx.save(file_path_dst, 'JPEG', quality=95)
+                    if format_dst.lower() in ("jpg", "jpeg"):
+                        imx.save(file_path_dst, "JPEG", quality=95)
                     else:
                         imx.save(file_path_dst, format_dst.upper())
 
             row_entry = [file_name, file_name_dst] + args_values
             ids_list.append(row_entry)
 
-
-    ids_aug = pd.DataFrame(ids_list,
-                           columns=['image_name','image_path']+args_keys)
-    return ids_aug
+    return pd.DataFrame(ids_list, columns=["image_name", "image_path"] + args_keys)
 
