@@ -18,7 +18,6 @@ from tensorflow.keras.callbacks import (
 )
 from tensorflow.keras import optimizers
 from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.utils import multi_gpu_model
 
 from .generators import *
 from .generic import *
