@@ -258,8 +258,15 @@ class ModelHelper(object):
 
         * gpus: number of GPUs to use, defaults to all.
         """
-        self.model_cpu = self.model
-        self.model = multi_gpu_model(self.model, gpus=gpus)
+
+        if tf.config.list_physical_devices("GPU"):
+            strategy = tf.distribute.MirroredStrategy()
+        else:  # Use the Default Strategy
+            strategy = tf.distribute.get_strategy()
+            self.model_cpu = self.model
+
+        with strategy.scope():
+            self.model = self.model
 
     def compile(self):
         self.model.compile(
